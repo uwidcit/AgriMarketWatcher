@@ -1,13 +1,24 @@
+import urllib
 import urllib2
 import xlrd
 from datetime import datetime
 from xlrd import open_workbook
 from pymongo import MongoClient
 import pymongo
+import json
+import time
+import datetime
 
 category = "ROOT CROPS"
 categories = ["root crops","condiments and spices","leafy vegetables","vegetables", "fruits","citrus"]
 
+
+# Extracts the data from a row and returns a dictionary 
+# @param sheet : the sheet to be processed
+# @param row : the row number to be processed
+# @param category : the category of the crop the be considered
+# @return : a dictionary representing the data at the specified row 
+#           for a particular sheet
 def processDaily(sheet, row, category):
 	dic = {}
 	dic['commodity'] = sheet.cell_value(row, 0).encode('ascii').lower()
@@ -79,19 +90,25 @@ def processRow(sheet, row, type):
 			else:
 				return processMonthly(sheet, row, category)
 		
-def traverseWorkbook(url, params = {}, type = "daily"):
+def traverseWorkbook(url, params = {}, workbook_type = "daily"):
 	values = []
 	try:
+		print "Trying to read ", url
 		data = urllib2.urlopen(url).read()
+		print "Reading data ....."
 		wb = open_workbook(url, file_contents=data)
+		print "Read workbook....."
 		for s in wb.sheets():
 			for row in range(s.nrows):
-				if (type == "daily" and row > 10) or (type == "monthly" and row > 15) :
+				if (workbook_type == "daily" and row > 10) or (workbook_type == "monthly" and row > 15) :
+					print "Processing row data"
 					rowData = processRow(s, row, type)
 					if rowData:
 						values.append(rowData)
 		return values;
 	except Exception, e:
+		print "Error in reading workbook at ", url
+		print e
 		return None
 
 def retrieveFile(url, filename):
@@ -107,6 +124,22 @@ def retrieveFile(url, filename):
 	except Exception, e:
 		return None
 
+def get_url(base_url, year, month, day = None):
+	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+	if (str(month).isdigit()):
+		mStr = months[int(month) - 1]
+	else:
+		mStr = month
+		months.index(month) + 1
+
+	if day:
+		return base_url +  "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
+	else:
+		url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"+str(mStr)+"%20"+str(year)+"%20NWM%20Monthly%20Report.xls"
+		return url
+
+
+
 def retrieveDaily(base_url, day, month, year):
 	filename = "daily" + "-" + str(day) + "-"+ str(month) + "-"+ str(year)+".xls"
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -119,20 +152,33 @@ def retrieveDaily(base_url, day, month, year):
 
 
 	url = base_url +  "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls";
+	#url = urllib.unquote(url)
+
+	#v = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-%2017%20June%202014.xls"
+	#v = urllib.unquote(v)
+	#print (url == v)
+	#print url 
+	#print v
 	
 	print "time: "+str(day)+"-"+str(mStr)+"-"+str(year)
 
 	
 	result = traverseWorkbook(url)
+	print "Got result"
 	if result:
 		#Add the date to each record
 		for x in result:
 			if x:
-				x.update({'date':datetime(int(year),int(month),int(day))})			
+				print x
+				x.update({'date':datetime.datetime(int(year),int(month),int(day))})	
+				print "Updated successfully"		
 			else:
-				result.remove(x)			
+				print "Removed"
+				result.remove(x)	
+		print "We have some resukt"		
 		return result
 	else:
+		print "We have no result"
 		return None
 
 def retrieveMonthly(base_url,  month, year):
@@ -176,48 +222,180 @@ def storeDaily(db, dData):
 		daily.insert(dData)
 		length = daily.count()
 
+
 	return length
+
+def storeMostRecentDaily(db, dData):
+	length = 0
+	if (dData and len(dData) > 0):
+		recent_daily = db.dailyRecent 
+		recent_daily.insert(dData)
+		length = recent_daily.count()
+	return length
+
+def storeMostRecentMonthly(db, dData):
+	length = 0
+	if (dbData and len(dbData) > 0):
+		recent_monthly = db.recentMonthly 
+		recent_monthly.insert(dData)
+		length = recent_monthly.count()
+	return length
+
+# Ideas
+# Create a document in the MongoDB database that stores the the most recent data in the database separately from
+# the rest of the data in addition to loading the the data together with the current data
+# we can then simply use the appropriate url to access the most recent data from the MongoDB
+# 1.  
+
+# To prevent the repeated parsing of xls files, we can store a list of read xls files
+
+
+# Parses the json returned by mongoDB in the format for url logging and returns a set of urls
+def extract_urls_from_json(j_obj):
+	data = json.loads(j_obj)
+	return data['url']
+
+
+# Gets all of the sheets processed so far by the database
+def get_processed_sheets(db):
+	processed = db.processed.find()
+	if not processed:
+		return set()
+	return set(map(lambda x : extract_urls_from_json(x), processed))
+
+
+# Logs sheets that have just been processed into the database
+def log_sheet_as_processed(db, sheet):
+	db.processed.insert({'url' : sheet})
+
+def getMostRecent():
+	base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
+	try:
+		months = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+			"October", "November", "December"]
+		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+		db = client.get_default_database()
+		day = int(time.strftime("%d"))
+		month_num = int(time.strftime("%m"))
+		months_names = [months[month_num - 1]]
+		months_names.append(months[11] if month_num == 1 else months[month_num - 2])
+		year_number = int(time.strftime("%Y"))
+		years = [year_number]
+		reset_daily = False
+		if month_num == 1:
+			years.append(year_number - 1)
+		d = None
+		for year in years:
+			for month in months_names:
+				for day in reversed(range(day + 1)):
+					url = get_url(base_url, str(year), str(month), str(day))
+					print "Checking URL: ", url
+					d = retrieveDaily(base_url, str(day), month, str(year))
+					print "Tried to retrieve data"
+					if d:
+						reset_daily = True
+						print "Grabed data"
+						break
+					else:
+						print "No data for {0}/{1}/{2}".format(str(day), str(month), str(year))
+				if reset_daily:
+					break
+			if reset_daily:
+				break
+		print "Found valid data"
+			
+		
+
+		if reset_daily:
+			db.drop_collection("dailyRecent")
+			storeMostRecentDaily(db, d)
+
+
+
+
+
+	except Exception, e:
+		print e
+	else:
+		pass
+	finally:
+		pass
+
+
+getMostRecent()
 
 def runGetAll():
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 	base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
 
+	
+
+	most_recent_daily = None
+	most_recent_monthly = None
 	daily = []
 	monthly = []
+	reset_daily = False
+	reset_monthly = False
 
+
+	client =  MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+
+	db = client.get_default_database()
+	processed = get_processed_sheets(db)
 	for year in range(2007, 2015):
 		for month in months:
 			#extract daily reports
 			for day in range(1,32):
-				d = retrieveDaily(base_url, str(day), month, str(year))
-				if d:
-					daily.extend(d)
-
+				url = get_url(base_url, str(year), str(month), str(day))
+				if not url in processed:
+					d = retrieveDaily(base_url, str(day), month, str(year))
+					if d:
+						reset_daily = True
+						daily.extend(d)
+						most_recent_daily = d
+						log_sheet_as_processed(db, url) # We are iterating through these properties in chronological order
+                                          # Consequently, the last update the the most_recent will be the most recent data in the excel sheets  
 			#extract monthly reports
-			m = retrieveMonthly(base_url, month, str(year))
-			if m:
-				monthly.extend(m)
+			url_month = get_url(base_url, month, str(year))
+			if not url_month in processed:
+				m = retrieveMonthly(base_url, month, str(year))
+				if m:
+					reset_monthly = True
+					monthly.extend(m)
+					most_recent_monthly = m 
+					log_sheet_as_processed(db, url_month)# Similar to the the most_recent_daily
 	
 	try:
-		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-		db = client.get_default_database()
-
+		
 		# db = client.agrinet			#removed this because it makes the application dependent on agrinet as database name
 
 		#because we are pulling the entire collection we crop the records before reinserting
-		db.drop_collection("daily")
-		db.drop_collection("monthly")
+		#db.drop_collection("daily")
+		#db.drop_collection("monthly")
+
+		# If we have a new set of data for the daily information, we insert that into the database
+		if reset_daily:
+			db.drop_collection("dailyRecent")
+			storeMostRecentDaily(db, most_recent_daily)
+
+		# If we have a new set of monthly data, we write that to the database
+		if reset_monthly:
+			db.drop_collection("monthlyRecent")
+			storeMostRecentMonthly(db, most_recent_monthly)
 		
 		print "Months " + str(len(monthly))
-		print "Stored " + str(storeMonthly(db, monthly))
+		print "Stored " + str(storeMonthly(db, monthly)) 
 
 		print "Daily "  + str(len(daily))
 		print "Stored " + str(storeDaily(db, daily))
 
+		
+		
+
 	except pymongo.errors.ConnectionFailure, e:
 		print e	
 	
-runGetAll() # run and extract the files from the server
+#runGetAll() # run and extract the files from the server
 
 def processDailyRec(rec, col):
 	print rec
