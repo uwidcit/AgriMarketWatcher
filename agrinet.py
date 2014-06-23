@@ -29,6 +29,11 @@ def process_results(cursor):
 		res.append(convert_compatible_json(c))
 	return res
 
+
+def extract_crop(crop):
+	return {"commodity" : crop}
+
+
 def extract_category_query(category):
 	qry = [];
 	category = category.upper().split(",")
@@ -72,6 +77,30 @@ def crops_list():
 	crops = []
 	crops = mongo.db.daily.distinct("commodity")
 	return json_util.dumps(crops)
+
+def my_json_parse(item):
+	item["id"] = str(item["_id"])								#convert mongodb id to a string
+	del item["_id"] 											#remove original key
+	return item
+
+def my_process_results(crops):
+	res = []
+	for c in crops:
+		res.append(my_json_parse(c))
+	return res
+
+
+# My edits
+@app.route('/crops/daily/recent')
+@app.route('/crops/daily/recent/<crop>')
+def most_recent_daily_data(crop = None):
+	if crop:
+		crops = mongo.db.dailyRecent.find(extract_crop(crop)) # If we have a crop that we want to obtain
+	else:
+		crops = mongo.db.dailyRecent.find() # Else, if we want all crops
+	#result = crops
+	result = process_results(crops)
+	return json_util.dumps(result, default =  json_util.default) 
 
 @app.route('/crops/categories')
 def crop_categories():
@@ -265,4 +294,5 @@ def login():
 
 if __name__ == "__main__":
 	port = int(os.environ.get("PORT", 5000))
-	app.run(host='0.0.0.0', port=port)
+	app.run(host = '127.0.0.1', port = port)
+	#app.run(host='0.0.0.0', port=port)
