@@ -95,20 +95,19 @@ def traverseWorkbook(url, params = {}, workbook_type = "daily"):
 	try:
 		print "Trying to read ", url
 		data = urllib2.urlopen(url).read()
-		print "Reading data ....."
+		# print "Reading data ....."
 		wb = open_workbook(url, file_contents=data)
-		print "Read workbook....."
+		# print "Read workbook....."
 		for s in wb.sheets():
 			for row in range(s.nrows):
 				if (workbook_type == "daily" and row > 10) or (workbook_type == "monthly" and row > 15) :
-					print "Processing row data"
-					rowData = processRow(s, row, type)
+					rowData = processRow(s, row, workbook_type)
 					if rowData:
 						values.append(rowData)
 		return values;
 	except Exception, e:
-		print "Error in reading workbook at ", url
-		print e
+		# print "Error in reading workbook at ", url
+		# print e
 		return None
 
 def retrieveFile(url, filename):
@@ -126,7 +125,9 @@ def retrieveFile(url, filename):
 
 def get_url(base_url, year, month, day = None):
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+	
 	if (str(month).isdigit()):
+		print month
 		mStr = months[int(month) - 1]
 	else:
 		mStr = month
@@ -221,8 +222,6 @@ def storeDaily(db, dData):
 		daily = db.daily
 		daily.insert(dData)
 		length = daily.count()
-
-
 	return length
 
 def storeMostRecentDaily(db, dData):
@@ -322,13 +321,11 @@ def getMostRecent():
 		pass
 
 
-getMostRecent()
+# getMostRecent()
 
 def runGetAll():
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 	base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
-
-	
 
 	most_recent_daily = None
 	most_recent_monthly = None
@@ -336,8 +333,7 @@ def runGetAll():
 	monthly = []
 	reset_daily = False
 	reset_monthly = False
-
-
+	#Connect to the Database
 	client =  MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 
 	db = client.get_default_database()
@@ -368,34 +364,34 @@ def runGetAll():
 	try:
 		
 		# db = client.agrinet			#removed this because it makes the application dependent on agrinet as database name
-
 		#because we are pulling the entire collection we crop the records before reinserting
 		#db.drop_collection("daily")
 		#db.drop_collection("monthly")
 
 		# If we have a new set of data for the daily information, we insert that into the database
 		if reset_daily:
+			print "resetting daily"
 			db.drop_collection("dailyRecent")
 			storeMostRecentDaily(db, most_recent_daily)
 
 		# If we have a new set of monthly data, we write that to the database
 		if reset_monthly:
+			print "resetting monthly"
 			db.drop_collection("monthlyRecent")
 			storeMostRecentMonthly(db, most_recent_monthly)
 		
+		db.drop_collection("monthly")
 		print "Months " + str(len(monthly))
 		print "Stored " + str(storeMonthly(db, monthly)) 
 
+		db.drop_collection("daily")
 		print "Daily "  + str(len(daily))
 		print "Stored " + str(storeDaily(db, daily))
-
-		
-		
 
 	except pymongo.errors.ConnectionFailure, e:
 		print e	
 	
-#runGetAll() # run and extract the files from the server
+runGetAll() # run and extract the files from the server
 
 def processDailyRec(rec, col):
 	print rec
