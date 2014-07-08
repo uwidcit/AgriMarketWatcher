@@ -136,6 +136,7 @@ def crop_categories(category = None):
 		res = mongo.db.daily.distinct("category")
 	return json_util.dumps(res)
 
+
 # Daily API
 @app.route('/crops/daily')															#Returns all the daily priceses
 @app.route('/crops/daily/<id>')													#Returns the daily price for a sepcific crop

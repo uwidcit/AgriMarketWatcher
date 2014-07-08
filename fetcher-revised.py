@@ -361,7 +361,7 @@ def getAllDaily():
         print "Error in accessing database"
 
 
-getAllDaily()
+# getAllDaily()
 
 def runGetAll():
 	print "Retrieving the all data"
@@ -460,7 +460,7 @@ def runGetAll():
 	except pymongo.errors.ConnectionFailure, e:
 		print e	
 	
-#runGetAll() # run and extract the files from the server
+runGetAll() # run and extract the files from the server
 
 def processDailyRec(rec, col):
 	print rec

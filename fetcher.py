@@ -106,7 +106,7 @@ def traverseWorkbook(url, params = {}, workbook_type = "daily"):
 						values.append(rowData)
 		return values;
 	except Exception, e:
-		# print "Error in reading workbook at ", url
+		print "Error in reading workbook at ", url
 		# print e
 		return None
 
@@ -153,14 +153,6 @@ def retrieveDaily(base_url, day, month, year):
 
 
 	url = base_url +  "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls";
-	#url = urllib.unquote(url)
-
-	#v = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-%2017%20June%202014.xls"
-	#v = urllib.unquote(v)
-	#print (url == v)
-	#print url 
-	#print v
-	
 	print "time: "+str(day)+"-"+str(mStr)+"-"+str(year)
 
 	
@@ -202,7 +194,7 @@ def retrieveMonthly(base_url,  month, year):
 	if result:
 		for x in result:
 			if x:
-				x.update({"date": datetime(int(year), int(month), 1)})
+				x.update({"date": datetime.datetime(int(year), int(month), 1)})
 		return result
 	else:
 		return None
@@ -333,42 +325,31 @@ def runGetAll():
 	monthly = []
 	reset_daily = False
 	reset_monthly = False
-	#Connect to the Database
-	client =  MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-
-	db = client.get_default_database()
-	processed = get_processed_sheets(db)
+	
 	for year in range(2007, 2015):
 		for month in months:
+
+			#extract monthly reports
+			m = retrieveMonthly(base_url, month, str(year))
+			if m:
+				reset_monthly = True
+				monthly.extend(m)
+				most_recent_monthly = m 
+
 			#extract daily reports
 			for day in range(1,32):
-				url = get_url(base_url, str(year), str(month), str(day))
-				if not url in processed:
-					d = retrieveDaily(base_url, str(day), month, str(year))
-					if d:
-						reset_daily = True
-						daily.extend(d)
-						most_recent_daily = d
-						log_sheet_as_processed(db, url) # We are iterating through these properties in chronological order
-                                          # Consequently, the last update the the most_recent will be the most recent data in the excel sheets  
-			#extract monthly reports
-			url_month = get_url(base_url, month, str(year))
-			if not url_month in processed:
-				m = retrieveMonthly(base_url, month, str(year))
-				if m:
-					reset_monthly = True
-					monthly.extend(m)
-					most_recent_monthly = m 
-					log_sheet_as_processed(db, url_month)# Similar to the the most_recent_daily
-	
+				d = retrieveDaily(base_url, str(day), month, str(year))
+				if d:
+					reset_daily = True
+					daily.extend(d)
+					most_recent_daily = d
 	try:
-		
-		# db = client.agrinet			#removed this because it makes the application dependent on agrinet as database name
-		#because we are pulling the entire collection we crop the records before reinserting
-		#db.drop_collection("daily")
-		#db.drop_collection("monthly")
+		#Connect to the Database
+		client =  MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+		db = client.get_default_database()
 
 		# If we have a new set of data for the daily information, we insert that into the database
+		
 		if reset_daily:
 			print "resetting daily"
 			db.drop_collection("dailyRecent")
