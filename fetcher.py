@@ -93,11 +93,9 @@ def processRow(sheet, row, type):
 def traverseWorkbook(url, params = {}, workbook_type = "daily"):
 	values = []
 	try:
-		print "Trying to read ", url
+		# print "Trying to read ", url
 		data = urllib2.urlopen(url).read()
-		# print "Reading data ....."
 		wb = open_workbook(url, file_contents=data)
-		# print "Read workbook....."
 		for s in wb.sheets():
 			for row in range(s.nrows):
 				if (workbook_type == "daily" and row > 10) or (workbook_type == "monthly" and row > 15) :
@@ -106,8 +104,8 @@ def traverseWorkbook(url, params = {}, workbook_type = "daily"):
 						values.append(rowData)
 		return values;
 	except Exception, e:
-		print "Error in reading workbook at ", url
-		# print e
+		# print "Error in reading workbook at ", url, e
+		print "Error traversing workbook", e
 		return None
 
 def retrieveFile(url, filename):
@@ -157,21 +155,16 @@ def retrieveDaily(base_url, day, month, year):
 
 	
 	result = traverseWorkbook(url)
-	print "Got result"
 	if result:
 		#Add the date to each record
 		for x in result:
 			if x:
-				print x
+				# print x
 				x.update({'date':datetime.datetime(int(year),int(month),int(day))})	
-				print "Updated successfully"		
 			else:
-				print "Removed"
 				result.remove(x)	
-		print "We have some resukt"		
 		return result
 	else:
-		print "We have no result"
 		return None
 
 def retrieveMonthly(base_url,  month, year):
@@ -219,6 +212,7 @@ def storeDaily(db, dData):
 def storeMostRecentDaily(db, dData):
 	length = 0
 	if (dData and len(dData) > 0):
+		db.drop_collection("dailyRecent")
 		recent_daily = db.dailyRecent 
 		recent_daily.insert(dData)
 		length = recent_daily.count()
@@ -227,6 +221,7 @@ def storeMostRecentDaily(db, dData):
 def storeMostRecentMonthly(db, dData):
 	length = 0
 	if (dData and len(dData) > 0):
+		db.drop_collection("recentMonthly")
 		recent_monthly = db.recentMonthly 
 		recent_monthly.insert(dData)
 		length = recent_monthly.count()
@@ -264,67 +259,61 @@ def getMostRecent():
 	try:
 		months = ["January", "February", "March", "April", "May", "June", "July", "August", "September","October", "November", "December"]
 		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-		db = client.get_default_database()
+		
 		day = int(time.strftime("%d"))
 		month_num = int(time.strftime("%m"))
 		months_names = []
-
+		#Calculate the months needed
 		if month_num == 1:
 			months_names.extend(months)
 		else:
 			months_names.extend(months[0: month_num])
-		
-
-		# months_names.append(months[11] if month_num == 1 else months[month_num - 2])
+		#Calculate the years needed (TODO fix to more than one year)
 		year_number = int(time.strftime("%Y"))
 		years = [year_number]
-		reset_daily = False
-		reset_monthly = False
 		if month_num == 1:
 			years.append(year_number - 1)
-		
-		print months_names
 
-		# #get most recent monthly data
-		# m = None
-		# for year in years:
-		# 	for month in months_names:
-		# 		m = retrieveMonthly("",month, year )
-		# 		if m:
-		# 			print "successfully found monthly prices"
-		# 			reset_monthly = True
-		# 			break
-		# 	if reset_monthly:
-		# 		break
-		
+		reset_daily = False
+		reset_monthly = False		
 
+		#get most recent monthly data
+		m = None
+		for year in years:
+			for month in reversed(months_names):
+				m = retrieveMonthly("",month, year )
+				if m:
+					print "successfully found monthly prices"
+					reset_monthly = True
+					break
+			if reset_monthly:
+				break
 
-		# #get most recent daily data
-		# d = None
-		# for year in years:
-		# 	for month in months_names:
-		# 		for day in reversed(range(day + 1)):
-		# 			url = get_url(daily_base_url, str(year), str(month), str(day))
-		# 			d = retrieveDaily(daily_base_url, str(day), month, str(year))
-		# 			if d:
-		# 				reset_daily = True
-		# 				break
-		# 		if reset_daily:
-		# 			break
-		# 	if reset_daily:
-		# 		break
-		# print "Found valid data"
+		#get most recent daily data
+		d = None
+		for year in years:
+			for month in reversed(months_names):
+				for day in reversed(range(day + 1)):
+					url = get_url(daily_base_url, str(year), str(month), str(day))
+					d = retrieveDaily(daily_base_url, str(day), month, str(year))
+					if d:
+						print "Found valid data"
+						reset_daily = True
+						break
+				if reset_daily:
+					break
+			if reset_daily:
+				break
 			
-		# print d		
-		# print m
 
-		# if reset_daily:
-		# 	db.drop_collection("dailyRecent")
-		# 	storeMostRecentDaily(db, d)
-
-
-
-
+		db = client.get_default_database()
+		if reset_daily and d:
+			print len(d)
+			storeMostRecentDaily(db, d)
+		
+		if reset_monthly and m:
+			print len(m)
+			storeMostRecentMonthly(db, d)
 
 	except Exception, e:
 		print e
@@ -373,13 +362,11 @@ def runGetAll():
 		
 		if reset_daily:
 			print "resetting daily"
-			db.drop_collection("dailyRecent")
 			storeMostRecentDaily(db, most_recent_daily)
 
 		# If we have a new set of monthly data, we write that to the database
 		if reset_monthly:
 			print "resetting monthly"
-			db.drop_collection("monthlyRecent")
 			storeMostRecentMonthly(db, most_recent_monthly)
 		
 		db.drop_collection("monthly")
