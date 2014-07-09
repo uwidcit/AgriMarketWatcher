@@ -226,7 +226,7 @@ def storeMostRecentDaily(db, dData):
 
 def storeMostRecentMonthly(db, dData):
 	length = 0
-	if (dbData and len(dbData) > 0):
+	if (dData and len(dData) > 0):
 		recent_monthly = db.recentMonthly 
 		recent_monthly.insert(dData)
 		length = recent_monthly.count()
@@ -260,46 +260,67 @@ def log_sheet_as_processed(db, sheet):
 	db.processed.insert({'url' : sheet})
 
 def getMostRecent():
-	base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
+	daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
 	try:
-		months = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
-			"October", "November", "December"]
+		months = ["January", "February", "March", "April", "May", "June", "July", "August", "September","October", "November", "December"]
 		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 		db = client.get_default_database()
 		day = int(time.strftime("%d"))
 		month_num = int(time.strftime("%m"))
-		months_names = [months[month_num - 1]]
-		months_names.append(months[11] if month_num == 1 else months[month_num - 2])
+		months_names = []
+
+		if month_num == 1:
+			months_names.extend(months)
+		else:
+			months_names.extend(months[0: month_num])
+		
+
+		# months_names.append(months[11] if month_num == 1 else months[month_num - 2])
 		year_number = int(time.strftime("%Y"))
 		years = [year_number]
 		reset_daily = False
+		reset_monthly = False
 		if month_num == 1:
 			years.append(year_number - 1)
-		d = None
-		for year in years:
-			for month in months_names:
-				for day in reversed(range(day + 1)):
-					url = get_url(base_url, str(year), str(month), str(day))
-					print "Checking URL: ", url
-					d = retrieveDaily(base_url, str(day), month, str(year))
-					print "Tried to retrieve data"
-					if d:
-						reset_daily = True
-						print "Grabed data"
-						break
-					else:
-						print "No data for {0}/{1}/{2}".format(str(day), str(month), str(year))
-				if reset_daily:
-					break
-			if reset_daily:
-				break
-		print "Found valid data"
-			
+		
+		print months_names
+
+		# #get most recent monthly data
+		# m = None
+		# for year in years:
+		# 	for month in months_names:
+		# 		m = retrieveMonthly("",month, year )
+		# 		if m:
+		# 			print "successfully found monthly prices"
+		# 			reset_monthly = True
+		# 			break
+		# 	if reset_monthly:
+		# 		break
 		
 
-		if reset_daily:
-			db.drop_collection("dailyRecent")
-			storeMostRecentDaily(db, d)
+
+		# #get most recent daily data
+		# d = None
+		# for year in years:
+		# 	for month in months_names:
+		# 		for day in reversed(range(day + 1)):
+		# 			url = get_url(daily_base_url, str(year), str(month), str(day))
+		# 			d = retrieveDaily(daily_base_url, str(day), month, str(year))
+		# 			if d:
+		# 				reset_daily = True
+		# 				break
+		# 		if reset_daily:
+		# 			break
+		# 	if reset_daily:
+		# 		break
+		# print "Found valid data"
+			
+		# print d		
+		# print m
+
+		# if reset_daily:
+		# 	db.drop_collection("dailyRecent")
+		# 	storeMostRecentDaily(db, d)
 
 
 
@@ -313,7 +334,7 @@ def getMostRecent():
 		pass
 
 
-# getMostRecent()
+getMostRecent()
 
 def runGetAll():
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -372,7 +393,7 @@ def runGetAll():
 	except pymongo.errors.ConnectionFailure, e:
 		print e	
 	
-runGetAll() # run and extract the files from the server
+# runGetAll() # run and extract the files from the server
 
 def processDailyRec(rec, col):
 	print rec
