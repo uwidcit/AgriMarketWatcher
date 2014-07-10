@@ -3,6 +3,8 @@ from pymongo import MongoClient
 import pymongo
 from pusher import Pusher
 import operator
+import datetime
+import copy
 
 def connect2DB():
 	try:
@@ -21,58 +23,79 @@ def createPushConnection():
 		print e
 		return None
 
+def formatMessage(currrec,prevrec, type="daily"):
+	message = {}
 
-def handleDailyDifference(before, current):
+	if type == "daily":
+		message = { 'commodity': currrec['commodity'], 'date': currrec['date'].strftime('%Y-%m-%dT%H:%M:%S'), 'price': currrec['price'], "previous": prevrec['price'] }
+	else:
+		message = { 'commodity': currrec['commodity'], 'date': currrec['date'].strftime('%Y-%m-%dT%H:%M:%S'), 'mean': currrec['mean'], "previous": prevrec['mean'] }
+
+	return message
+
+def updateGeneralDataSet(curr, prev, typeR="daily"):
+	db = connect2DB()
+	if db:
+		if typeR == "daily":
+			dateRec = db.daily.find().sort("date", -1).limit(1)
+			if dateRec[0]['date'] != curr['date']:
+				db.daily.insert(curr)
+				print "from ", dateRec[0]['date'], " to", curr['date']
+		else: #monthly
+			dateRec = db.monthly.find().sort("date", -1).limit(1)
+			if dateRec[0]['date'] != curr['date']:
+				db.monthly.insert(curr)
+				print "from ", dateRec[0]['date'], " to", curr['date']
+
+def handleDifference(before, current, typeR="daily"):
 	if before[0]['date'] != current[0]['date']:
 		p = createPushConnection()
-		# before.sort(key=operator.itemgetter('commodity'))
-		# current.sort(key=operator.itemgetter('commodity'))
-		for b in before:
-			for c in current:
-				if b['commodity'] == c['commodity']:
-					if b['price'] != c['price']:
-						print "found mis match in price"
-						p['daily'].trigger(c['commodity'], {'message': { 'commodity': c['commodity'], 'date': c['date'].strftime('%Y-%m-%dT%H:%M:%S'), 'price': c['price'], 'previous': b['price'] }})
-					break
+		if p:
+			for b in before:
+				for c in current:
+					if b['commodity'] == c['commodity']:
+						if b['price'] != c['price']:
+							print "price for ", b['commodity'], " changed"
+							# Add new record to the general dataset
+							updateGeneralDataSet(c, b, typeR)
+							# Send Push notification of change record
+							event = c['commodity'].replace(" ", "").lower()
+							message = formatMessage(c,b, typeR)
+							p[typeR].trigger(event, {'message': message})
+						else:
+							print "price for ", b['commodity'], " remained the same"
+						break
+	else:
+		print "no new record found"
 
-
-def handleMonthlyDifference(before, current):
-	if before[0]['date'] != current[0]['date']:
-		p = createPushConnection()
-		# before.sort(key=operator.itemgetter('commodity'))
-		# current.sort(key=operator.itemgetter('commodity'))
-
-		for b in before:
-			for c in current:
-				if b['commodity'] == c['commodity']:
-					if b['mean'] != c['mean']:
-						print "found mis match in price"
-						p['monthly'].trigger(c['commodity'], {'message': { 'commodity': c['commodity'], 'date': c['date'].strftime('%Y-%m-%dT%H:%M:%S'), 'mean': c['mean'], 'previous': b['mean'] }})
-					break
 
 def run():
 	db = connect2DB()
 	if db:
 		recsCurrent = fetcher.getMostRecent()
-		print recsCurrent['daily'][0]
-		print recsCurrent['monthly'][0]
-
 		if recsCurrent:
-			handleMonthlyDifference(list(db.recentMonthly.find()), recsCurrent['monthly'])
-			handleDailyDifference(list(db.dailyRecent.find()), recsCurrent['daily'])
+			handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
+			handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
 
-# run()
+run()
+
+def dailyconverter(rec):
+	rec['date'] = rec['date'] + datetime.timedelta(days=10)
+	rec['price'] = rec['price'] + 1
+	return rec
 
 def conversionTesting():
 	db = connect2DB()
 	if db:
 		recsD = list(db.dailyRecent.find())
-		recsD.sort(key=operator.itemgetter('commodity'))
+		recs2 = copy.deepcopy(recsD)
+		recs2 = list(map(dailyconverter, recs2))
 
-		recsD2 = map(lambda x: x['date'])
+		print len(recsD)
+		print recsD[0]['price']
+		print len(recs2)
+		print recs2[0]['price']
 
-		handleDailyDifference
+		handleDailyDifference(recsD, recs2)
 
-	
-
-conversionTesting();
+# conversionTesting();
