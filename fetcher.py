@@ -305,7 +305,6 @@ def getMostRecent():
 			if reset_daily:
 				break
 			
-
 		db = client.get_default_database()
 		if reset_daily and d:
 			print len(d)
@@ -313,7 +312,9 @@ def getMostRecent():
 		
 		if reset_monthly and m:
 			print len(m)
-			storeMostRecentMonthly(db, d)
+			storeMostRecentMonthly(db, m)
+
+		return {"monthly": m, "daily": d}
 
 	except Exception, e:
 		print e
@@ -321,9 +322,10 @@ def getMostRecent():
 		pass
 	finally:
 		pass
+	return None
 
 
-getMostRecent()
+# getMostRecent()
 
 def runGetAll():
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
