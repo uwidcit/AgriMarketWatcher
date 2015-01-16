@@ -5,23 +5,27 @@ from pusher import Pusher
 import operator
 import datetime
 import copy
+from parse_rest.installation import Push
+from parse_rest.connection import register
+
+register("ZEYEsAFRRgxjy0BXX1d5BJ2xkdJtsjt8irLTEnYJ", "iDYiJeZSwhDURPRpQexM9UvcVkj5AfVAhduCvCsB", master_key="3Qd3xFV3S9hrGJCnICMA4rNGbPMblahdFGhiwwGa")
 
 def connect2DB():
 	try:
 		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 		db = client.get_default_database()
 		return db
-	except Exception, e:
-		print e
+	except Exception as e:
+		print e.strerror
 		return None
 
-def createPushConnection():
-	try:
-		p = Pusher(app_id="81011", key="8749af531d18b551d367", secret="8bfde7e6e0293352ae71")
-		return p
-	except Exception, e:
-		print e
-		return None
+#def createPushConnection():
+#	try:
+#		p = Pusher(app_id="81011", key="8749af531d18b551d367", secret="8bfde7e6e0293352ae71")
+#		return p
+#	except Exception, e:
+#		print e
+#		return None
 
 def formatMessage(currrec,prevrec, type="daily"):
 	message = {}
@@ -49,22 +53,23 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 
 def handleDifference(before, current, typeR="daily"):
 	if before[0]['date'] != current[0]['date']:
-		p = createPushConnection()
-		if p:
-			for b in before:
-				for c in current:
-					if b['commodity'] == c['commodity']:
-						if b['price'] != c['price']:
-							print "price for ", b['commodity'], " changed"
-							# Add new record to the general dataset
-							updateGeneralDataSet(c, b, typeR)
-							# Send Push notification of change record
-							event = c['commodity'].replace(" ", "").lower()
-							message = formatMessage(c,b, typeR)
-							p[typeR].trigger(event, {'message': message})
-						else:
-							print "price for ", b['commodity'], " remained the same"
-						break
+		#p = createPushConnection()
+		#if p:
+		for b in before:
+			for c in current:
+				if b['commodity'] == c['commodity']:
+					if b['price'] != c['price']:
+						print "price for ", b['commodity'], " changed"
+						# Add new record to the general dataset
+						updateGeneralDataSet(c, b, typeR)
+						# Send Push notification of change record
+						event = c['commodity'].replace(" ", "").lower()
+						message = formatMessage(c,b, typeR)
+						#p[typeR].trigger(event, {'message': message})
+						Push.message(message, channels=[b['commodity']])
+					else:
+						print "price for ", b['commodity'], " remained the same"
+					break
 	else:
 		print "no new record found"
 
