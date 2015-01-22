@@ -73,7 +73,7 @@ def handleDifference(before, current, typeR="daily"):
 							change = "increased"
 							if b['price'] >= c['price']:
 								change = "decreased"
-							message = c['commodity'] + "price has " + change + " to " + str(c['price'])
+							message = "The price of " + c['commodity'] + " has " + change + " to " + str(c['price'])
 							Push.message(message, channels=[b['commodity']])
 						else:
 							print "price for ", b['commodity'], " remained the same"
