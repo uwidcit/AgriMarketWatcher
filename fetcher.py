@@ -292,18 +292,19 @@ def getMostRecent():
 		#get most recent daily data
 		d = None
 		for year in years:
-			for month in reversed(months_names):
-				for day in reversed(range(day + 1)):
-					url = get_url(daily_base_url, str(year), str(month), str(day))
-					d = retrieveDaily(daily_base_url, str(day), month, str(year))
-					if d:
-						print "Found valid data"
-						reset_daily = True
-						break
-				if reset_daily:
+			#for month in reversed(months_names):
+			for day in reversed(range(day + 1)):
+				url = get_url(daily_base_url, str(year), str(month_num), str(day))
+				d = retrieveDaily(daily_base_url, str(day), month_num, str(year))
+				if d:
+					print "Found valid data"
+					reset_daily = True
 					break
 			if reset_daily:
 				break
+			day = int(time.strftime("%d"))
+			#if reset_daily:
+			#	break
 			
 		db = client.get_default_database()
 		if reset_daily and d:
