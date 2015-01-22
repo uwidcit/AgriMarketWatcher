@@ -52,6 +52,7 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 				print "from ", dateRec[0]['date'], " to", curr['date']
 
 def handleDifference(before, current, typeR="daily"):
+	db = connect2DB()
 	if before != None and current != None:
 		print "Before " + before[0]['date'].ctime()
 		print "Current " + current[0]['date'].ctime()
@@ -73,6 +74,11 @@ def handleDifference(before, current, typeR="daily"):
 						else:
 							print "price for ", b['commodity'], " remained the same"
 						break
+
+			if typeR == "daily":
+				fetcher.storeMostRecentDaily(db, current)
+			if typeR == "monthly":
+				fetcher.storeMostRecentMonthly(db, current)
 		else:
 			print "no new record found"
 	else:

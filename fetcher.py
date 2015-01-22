@@ -259,7 +259,7 @@ def getMostRecent():
 	try:
 		months = ["January", "February", "March", "April", "May", "June", "July", "August", "September","October", "November", "December"]
 		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-		
+
 		day = int(time.strftime("%d"))
 		month_num = int(time.strftime("%m"))
 		months_names = []
@@ -275,7 +275,7 @@ def getMostRecent():
 			years.append(year_number - 1)
 
 		reset_daily = False
-		reset_monthly = False		
+		reset_monthly = False
 
 		#get most recent monthly data
 		m = None
@@ -305,15 +305,15 @@ def getMostRecent():
 			day = int(time.strftime("%d"))
 			#if reset_daily:
 			#	break
-			
-		db = client.get_default_database()
-		if reset_daily and d:
-			print len(d)
-			storeMostRecentDaily(db, d)
-		
-		if reset_monthly and m:
-			print len(m)
-			storeMostRecentMonthly(db, m)
+
+		#db = client.get_default_database()
+		#if reset_daily and d:
+		#	print len(d)
+		#	storeMostRecentDaily(db, d)
+
+		#if reset_monthly and m:
+		#	print len(m)
+		#	storeMostRecentMonthly(db, m)
 
 		return {"monthly": m, "daily": d}
 
