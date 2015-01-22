@@ -52,26 +52,29 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 				print "from ", dateRec[0]['date'], " to", curr['date']
 
 def handleDifference(before, current, typeR="daily"):
-	if before[0]['date'] != current[0]['date']:
-		#p = createPushConnection()
-		#if p:
-		for b in before:
-			for c in current:
-				if b['commodity'] == c['commodity']:
-					if b['price'] != c['price']:
-						print "price for ", b['commodity'], " changed"
-						# Add new record to the general dataset
-						updateGeneralDataSet(c, b, typeR)
-						# Send Push notification of change record
-						event = c['commodity'].replace(" ", "").lower()
-						message = formatMessage(c,b, typeR)
-						#p[typeR].trigger(event, {'message': message})
-						Push.message(message, channels=[b['commodity']])
-					else:
-						print "price for ", b['commodity'], " remained the same"
-					break
+	if before != None and current != None:
+		if before[0]['date'] != current[0]['date']:
+			#p = createPushConnection()
+			#if p:
+			for b in before:
+				for c in current:
+					if b['commodity'] == c['commodity']:
+						if b['price'] != c['price']:
+							print "price for ", b['commodity'], " changed"
+							# Add new record to the general dataset
+							updateGeneralDataSet(c, b, typeR)
+							# Send Push notification of change record
+							event = c['commodity'].replace(" ", "").lower()
+							message = formatMessage(c,b, typeR)
+							#p[typeR].trigger(event, {'message': message})
+							Push.message(message, channels=[b['commodity']])
+						else:
+							print "price for ", b['commodity'], " remained the same"
+						break
+		else:
+			print "no new record found"
 	else:
-		print "no new record found"
+		print "Doesn't exist"
 
 
 def run():
