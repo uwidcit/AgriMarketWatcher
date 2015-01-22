@@ -53,7 +53,9 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 
 def handleDifference(before, current, typeR="daily"):
 	if before != None and current != None:
-		if before[0]['date'] != current[0]['date']:
+		print "Before " + before[0]['date'].ctime()
+		print "Current " + current[0]['date'].ctime()
+		if before[0]['date'].ctime() != current[0]['date'].ctime():
 			#p = createPushConnection()
 			#if p:
 			for b in before:
