@@ -104,6 +104,6 @@ def conversionTesting():
 		print len(recs2)
 		print recs2[0]['price']
 
-		handleDailyDifference(recsD, recs2)
+		handleDifference(recsD, recs2)
 
 # conversionTesting();
