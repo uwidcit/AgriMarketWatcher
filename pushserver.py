@@ -67,9 +67,13 @@ def handleDifference(before, current, typeR="daily"):
 							# Add new record to the general dataset
 							updateGeneralDataSet(c, b, typeR)
 							# Send Push notification of change record
-							event = c['commodity'].replace(" ", "").lower()
-							message = formatMessage(c,b, typeR)
+							#event = c['commodity'].replace(" ", "").lower()
+							#message = formatMessage(c,b, typeR)
 							#p[typeR].trigger(event, {'message': message})
+							change = "increased"
+							if b['price'] >= c['price']:
+								change = "decreased"
+							message = c['commodity'] + "price has " + change + "to " + c['price']
 							Push.message(message, channels=[b['commodity']])
 						else:
 							print "price for ", b['commodity'], " remained the same"
