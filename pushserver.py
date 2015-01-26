@@ -52,41 +52,38 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 				print "from ", dateRec[0]['date'], " to", curr['date']
 
 def handleDifference(before, current, typeR="daily"):
-	db = connect2DB()
-	if before != None and current != None:
-		print "Before " + before[0]['date'].ctime()
-		print "Current " + current[0]['date'].ctime()
-		if before[0]['date'].ctime() != current[0]['date'].ctime():
-			#p = createPushConnection()
-			#if p:
-			for b in before:
-				for c in current:
-					if b['commodity'] == c['commodity']:
-						if b['price'] != c['price']:
-							print "price for ", b['commodity'], " changed"
-							# Add new record to the general dataset
-							updateGeneralDataSet(c, b, typeR)
-							# Send Push notification of change record
-							#event = c['commodity'].replace(" ", "").lower()
-							#message = formatMessage(c,b, typeR)
-							#p[typeR].trigger(event, {'message': message})
-							change = "increased"
-							if b['price'] >= c['price']:
-								change = "decreased"
-							message = "The price of " + c['commodity'] + " has " + change + " to " + str(c['price'])
-							Push.message(message, channels=[b['commodity']])
-						else:
-							print "price for ", b['commodity'], " remained the same"
-						break
+    db = connect2DB()
+    if before != None and current != None:
+        print "Before " + before[0]['date'].ctime()
+        print "Current " + current[0]['date'].ctime()
+        if before[0]['date'].ctime() != current[0]['date'].ctime():
+            for b in before:
+                for c in current:
+                    if b['commodity'] == c['commodity']:
+                        if b['price'] != c['price']:
+                            print "price for ", b['commodity'], " changed"
+                            # Add new record to the general dataset
+                            updateGeneralDataSet(c, b, typeR)
+                            # Send Push notification of change record
+                            change = "increased"
+                            if b['price'] >= c['price']:
+                                change = "decreased"
+                            message = "The price of " + c['commodity'] + " has " + change + " to " + str(c['price'])
+                            name = b['commodity']
+                            idx = name.find("(")
+                            Push.message(message, channels=[name[0:idx]])
+                        else:
+                            print "price for ", b['commodity'], " remained the same"
+                        break
 
-			if typeR == "daily":
-				fetcher.storeMostRecentDaily(db, current)
-			if typeR == "monthly":
-				fetcher.storeMostRecentMonthly(db, current)
-		else:
-			print "no new record found"
-	else:
-		print "Doesn't exist"
+            if typeR == "daily":
+                fetcher.storeMostRecentDaily(db, current)
+            if typeR == "monthly":
+                fetcher.storeMostRecentMonthly(db, current)
+        else:
+            print "no new record found"
+    else:
+        print "Doesn't exist"
 
 
 def run():
