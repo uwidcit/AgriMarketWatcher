@@ -269,11 +269,11 @@ def crop_daily_commodity(commodity=None):
 @app.route('/crops/daily/predict')												# Returns the daily prices of the most recent entry
 @app.route('/crops/daily/predict/<crop>')								# Returns the most recent daily price of the specified comodity
 @crossdomain(origin='*')
-def most_recent_daily_data(crop = None):
+def prediction_data(crop = None):
 	if crop:
-		crops = mongo.db.dailyRecent.find(format_crop_query(crop)) 	# If we have a crop that we want to obtain
+		crops = mongo.db.predictions.find(format_crop_query(crop)) 	# If we have a crop that we want to obtain
 	else:
-		crops = mongo.db.dailyRecent.find() 								# Else, if we want all crops
+		crops = mongo.db.predictions.find() 								# Else, if we want all crops
 	result = process_results(crops)
 	return json_util.dumps(result, default =  json_util.default)
 
