@@ -9,8 +9,14 @@ MAX_DIFF = 0.5
 
 def predict():
 	clf = linear_model.LinearRegression()
-	clf.predict([[10, 2010], [12, 2011], [11, 2012]]),
-	print clf.coef_
+	Y_arr = [4.7, 6.5, 5.5, 7.5]
+	X_arr = [[2011, 1], [2012, 2], [2013, 3], [2014, 4]]
+	clf.fit(X_arr, Y_arr)
+	coef = clf.coef_
+	#print coef
+	#print coef[1]*2 + coef[0]
+	ans = clf.predict([2015, 5])
+	print ans
 
 def evalPrediction(expected, actual):
     if abs(expected - actual) == MAX_DIFF:
@@ -25,3 +31,5 @@ def storePredictions(db, dData):
 		predictions.insert(dData)
 		length = predictions.count()
 	return length
+
+predict()
