@@ -60,9 +60,9 @@ def run(crop):
 	if db:
 		for year in range(2007, today.year):
 			#get price from db
-			hi_date = datetime.date(year, today.month, today.day) + datetime.timedelta(days=DAY_RANGE)
-			lo_date = datetime.date(year, today.month, today.day) - datetime.timedelta(days=DAY_RANGE)
-			recs = list(db.daily.find({"commodity": crop, "date": {'$gte': lo_date.isoformat(), '$lte': hi_date.isoformat()}}))
+			hi_date = datetime.datetime(year, today.month, today.day, 0, 0, 0) + datetime.timedelta(days=DAY_RANGE)
+			lo_date = datetime.datetime(year, today.month, today.day, 0, 0, 0) - datetime.timedelta(days=DAY_RANGE)
+			recs = list(db.daily.find({"commodity": crop, "date": {'$gte': lo_date, '$lte': hi_date}}))
 			print recs
 			if len(recs) > 0:
 				prices.append(recs[0]["price"])
@@ -74,7 +74,5 @@ def run(crop):
 		clf = train(dates, prices)
 		pred = makePrediction(clf, today.year)
 		print pred
-		return pred
+		return round(pred,2)
 	return -1
-
-run("carrot")
