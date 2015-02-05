@@ -63,7 +63,7 @@ def run(crop):
 			hi_date = datetime.date(year, today.month, today.day) + datetime.timedelta(days=DAY_RANGE)
 			lo_date = datetime.date(year, today.month, today.day) - datetime.timedelta(days=DAY_RANGE)
 			recs = list(db.daily.find({"commodity": crop, "date": {'$gte': lo_date.isoformat(), '$lte': hi_date.isoformat()}}))
-			if(recs):
+			if len(recs) > 0:
 				prices.append(recs[0]["price"])
 				i += 1
 				dates.append([year, i])
