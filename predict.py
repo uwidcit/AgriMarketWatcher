@@ -7,7 +7,7 @@ from sklearn import linear_model
 
 MAX_DIFF = 0.5
 NUM_TRAIN = 0
-DAY_RANGE = 5
+DAY_RANGE = 10
 
 def connect2DB():
 	try:
@@ -67,8 +67,13 @@ def run(crop):
 				prices.append(recs[0]["price"])
 				i += 1
 				dates.append([year, i])
-	if len(prices) != 0 or len(dates) != 0:
+	print prices
+	print dates
+	if len(prices) != 0 and len(dates) != 0:
 		clf = train(dates, prices)
 		pred = makePrediction(clf, today.year)
+		print pred
 		return pred
 	return -1
+
+run("carrot")
