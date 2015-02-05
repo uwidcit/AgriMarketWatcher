@@ -271,7 +271,7 @@ def crop_daily_commodity(commodity=None):
 @crossdomain(origin='*')
 def prediction_data(crop = None):
 	if crop:
-		crops = mongo.db.predictions.find(format_crop_query(crop)) 	# If we have a crop that we want to obtain
+		crops = mongo.db.predictions.find({"name":crop}) 	# If we have a crop that we want to obtain
 	else:
 		crops = mongo.db.predictions.find() 								# Else, if we want all crops
 	result = process_results(crops)
