@@ -7,7 +7,7 @@ from sklearn import linear_model
 
 MAX_DIFF = 0.5
 NUM_TRAIN = 0
-DAY_RANGE = 10
+DAY_RANGE = 30
 
 def connect2DB():
 	try:
