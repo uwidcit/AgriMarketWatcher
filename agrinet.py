@@ -274,7 +274,7 @@ def prediction_data(crop = None):
 		crops = mongo.db.predictions.find({"name":crop}) 	# If we have a crop that we want to obtain
 	else:
 		crops = mongo.db.predictions.find() 								# Else, if we want all crops
-	result = process_results(crops)
+	result = crops
 	return json_util.dumps(result, default =  json_util.default)
 
 #Monthly API
