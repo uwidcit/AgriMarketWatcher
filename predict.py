@@ -63,13 +63,10 @@ def run(crop):
 			hi_date = datetime.datetime(year, today.month, today.day, 0, 0, 0) + datetime.timedelta(days=DAY_RANGE)
 			lo_date = datetime.datetime(year, today.month, today.day, 0, 0, 0) - datetime.timedelta(days=DAY_RANGE)
 			recs = list(db.daily.find({"commodity": crop, "date": {'$gte': lo_date, '$lte': hi_date}}))
-			print recs
 			if len(recs) > 0:
 				prices.append(recs[0]["price"])
 				i += 1
 				dates.append([year, i])
-	print prices
-	print dates
 	if len(prices) != 0 and len(dates) != 0:
 		clf = train(dates, prices)
 		pred = makePrediction(clf, today.year)
