@@ -74,11 +74,11 @@ def handleDifference(before, current, typeR="daily"):
                             idx = name.find("(")
                             Push.message(message, channels=[name[0:idx]])
                             pred = predict.run(c['commodity'])
-                            if pred != -1:
-                            	newRec = {"name" : c['commodity'], "price" : pred}
-                            	db.predictions.insert(newRec)
                         else:
                             print "price for ", b['commodity'], " remained the same"
+                        if pred != -1:
+                        	newRec = {"name" : c['commodity'], "price" : pred}
+                        	db.predictions.insert(newRec)
                         break
 
             if typeR == "daily":
