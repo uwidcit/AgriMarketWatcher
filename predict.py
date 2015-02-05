@@ -52,7 +52,7 @@ def storePredictions(db, dData):
 	return length
 
 def run(crop):
-	today = datetime.date.today()
+	today = datetime.date.today() + datetime.timedelta(days=1)
 	prices = []
 	dates = []
 	i = 0
@@ -72,5 +72,3 @@ def run(crop):
 		pred = makePrediction(clf, today.year)
 		return pred
 	return -1
-
-run("cabbage")

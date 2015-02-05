@@ -1,4 +1,5 @@
 import fetcher
+import predict
 from pymongo import MongoClient
 import pymongo
 from pusher import Pusher
@@ -72,6 +73,10 @@ def handleDifference(before, current, typeR="daily"):
                             name = b['commodity'].replace(" ", "")
                             idx = name.find("(")
                             Push.message(message, channels=[name[0:idx]])
+                            pred = predict.run(c['commodity'])
+                            if pred != -1:
+                            	newRec = {"name" : c['commodity'], "price" : pred}
+                            	db.predictions.insert(newRec)
                         else:
                             print "price for ", b['commodity'], " remained the same"
                         break
