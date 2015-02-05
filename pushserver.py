@@ -57,7 +57,7 @@ def handleDifference(before, current, typeR="daily"):
     if before != None and current != None:
         print "Before " + before[0]['date'].ctime()
         print "Current " + current[0]['date'].ctime()
-        if before[0]['date'].ctime() != current[0]['date'].ctime():
+        if before[0]['date'].ctime() == current[0]['date'].ctime():
             for b in before:
                 for c in current:
                     if b['commodity'] == c['commodity']:
