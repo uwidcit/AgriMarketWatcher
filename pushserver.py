@@ -2,7 +2,6 @@ import fetcher
 import predict
 from pymongo import MongoClient
 import pymongo
-import operator
 import datetime
 import copy
 from parse_rest.installation import Push
