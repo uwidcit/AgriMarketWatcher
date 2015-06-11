@@ -21,3 +21,6 @@ virtualenv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
+
+using multipack for heroku installatin
+https://github.com/Stibbons/heroku-buildpack-libffi
