@@ -10,7 +10,7 @@ from parse_rest.connection import register
 
 register("ZEYEsAFRRgxjy0BXX1d5BJ2xkdJtsjt8irLTEnYJ", "iDYiJeZSwhDURPRpQexM9UvcVkj5AfVAhduCvCsB", master_key="3Qd3xFV3S9hrGJCnICMA4rNGbPMblahdFGhiwwGa")
 
-MIN_DIFF = 0.25
+MIN_DIFF = 1.0
 
 def connect2DB():
 	try:
@@ -62,25 +62,26 @@ def handleDifference(before, current, typeR="daily"):
             for b in before:
                 for c in current:
                     if b['commodity'] == c['commodity']:
-                        if abs(b['price'] - c['price']) > MIN_DIFF:
-                            print "price for ", b['commodity'], " changed"
-                            # Add new record to the general dataset
-                            updateGeneralDataSet(c, b, typeR)
-                            # Send Push notification of change record
-                            change = "increased"
-                            if b['price'] >= c['price']:
-                                change = "decreased"
-                            message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
-                            name = b['commodity'].replace(" ", "")
-                            idx = name.find("(")
-                            Push.message(message, channels=[name[0:idx]])
-                        else:
-                            print "price for ", b['commodity'], " remained the same"
-                        pred = predict.run(c['commodity'])
-                        if pred != -1:
-                        	newRec = {"name" : c['commodity'], "price" : pred}
-                        	db.predictions.insert(newRec)
-                        break
+                    	if typeR == "daily":
+	                        if abs(b['price'] - c['price']) > MIN_DIFF:
+	                            print "price for ", b['commodity'], " changed"
+	                            # Add new record to the general dataset
+	                            updateGeneralDataSet(c, b, typeR)
+	                            # Send Push notification of change record
+	                            change = "increased"
+	                            if b['price'] >= c['price']:
+	                                change = "decreased"
+	                            message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
+	                            name = b['commodity'].replace(" ", "")
+	                            idx = name.find("(")
+	                            Push.message(message, channels=[name[0:idx]])
+	                        else:
+	                            print "price for ", b['commodity'], " remained the same"
+	                        pred = predict.run(c['commodity'])
+	                        if pred != -1:
+	                        	newRec = {"name" : c['commodity'], "price" : pred}
+	                        	db.predictions.insert(newRec)
+	                        breaktypeR
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)

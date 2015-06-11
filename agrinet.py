@@ -4,6 +4,7 @@ from bson import json_util, objectid
 from datetime import datetime, timedelta
 import re#regular expression
 import os
+import fetcher
 
 from functools import update_wrapper
 
@@ -11,6 +12,7 @@ app = Flask(__name__)
 app.debug = True
 
 app.config['MONGO_URI'] = "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461"
+# app.config['MONGO_AUTO_START_REQUEST'] = False;
 # app.config['MONGO_URI'] = "mongodb://localhost/agrinet";
 mongo = PyMongo(app)
 
@@ -387,6 +389,13 @@ def monthly_crop_commodity(commodity = None):
 		print e
 
 	return json_util.dumps(res,default=json_util.default)
+
+
+@app.route('/api/test/fetch')
+def test_fetcher():
+	recsCurrent = fetcher.getMostRecent()
+	return json_util.dumps(recsCurrent,default=json_util.default)
+
 
 
 @app.route('/login', methods=['GET', 'POST'])

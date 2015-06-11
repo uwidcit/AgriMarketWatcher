@@ -326,7 +326,7 @@ def getMostRecent():
 	return None
 
 
-# getMostRecent()
+# print getMostRecent()
 
 def runGetAll():
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
