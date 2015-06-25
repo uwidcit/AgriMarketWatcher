@@ -390,8 +390,8 @@ def processDailyRec(rec, col):
 
 def testIndivid():
 	daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
-	d = retrieveDaily(daily_base_url,19,"February",2014 )
-	# print "daily " + str(len(d))
+	d = retrieveDaily(daily_base_url,20,"January",2015 )
+	print "daily " + str(len(d))
 	# # print d[0]
 
 	# m = retrieveMonthly("", "February", 2014)
@@ -412,23 +412,24 @@ def testIndivid():
 	try:
 		client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 		db = client.get_default_database()
+		
 
-		db.drop_collection("daily")
+		# db.drop_collection("daily")
 		# db.drop_collection("monthly")
 
 		daily = db.daily
 		# monthly  = db.monthly
-
+		
 
 		daily.insert(d)
 		# monthly.insert(m)
 
 
 		# print client.database_names()
-		print daily.count()
+		# print daily.count()
 		# print monthly.count()
 
 	except pymongo.errors.ConnectionFailure, e:
 		print e
 
-# testIndivid()
+testIndivid()

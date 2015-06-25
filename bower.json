@@ -1,0 +1,17 @@
+{
+  "name": "AgriMarketWatcher",
+  "version": "0.0.2",
+  "homepage": "https://github.com/uwidcit/AgriMarketWatcher",
+  "authors": [
+    "kyledef <kyle.e.defreitas@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {}
+}

@@ -1,0 +1,5 @@
+{
+  "directory": "static/libs",
+  "analytics": true,
+  "timeout": 120000
+}

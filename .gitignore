@@ -5,3 +5,4 @@ venv
 xls
 
 .idea
+static/libs

@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, make_response, url_for,render_template, current_app
 from flask.ext.pymongo import PyMongo
+import pymongo
 from bson import json_util, objectid
 from datetime import datetime, timedelta
-import re#regular expression
+import re #regular expression
 import os
 import fetcher
 
@@ -111,7 +112,7 @@ def process_options(options, request):
 @crossdomain(origin='*')
 def home():
 	links = []
-	return render_template("main.html")
+	return render_template("main.html", links=links)
 
 @app.route("/about")
 def about():
@@ -159,7 +160,7 @@ def crops_id(id=None):
 					offset = int(request.args.get("offset"))
 
 			options = process_options(options, request)
-			crops = mongo.db.daily.find(options).sort( "date" , -1 ).skip(offset).limit(limit)
+			crops = mongo.db.daily.find(options).sort( [("date",-1)] ).skip(offset).limit(limit)
 		res = process_results(crops)
 	except Exception, e:
 		print e
@@ -195,7 +196,7 @@ def daily_dates_list(date = None):
 
 		else:
 			end = datetime.now()
-			start = end - timedelta(days=30) 								#default to 30 days difference
+			start = end - timedelta(days=300) 								#default to 30 days difference
 			options = {"date":{'$gte': start, '$lt': end}} 	#between dates syntax for mongodb
 			dates = mongo.db.daily.find(options).distinct("date")	
 			res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
