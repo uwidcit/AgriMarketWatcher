@@ -69,7 +69,7 @@ def handleDifference(before, current, typeR="daily"):
 	                        if abs(b['price'] - c['price']) > MIN_DIFF:
 	                            print "price for ", b['commodity'], " changed"
 	                            # Add new record to the general dataset
-	                            updateGeneralDataSet(c, b, typeR)
+	                            # updateGeneralDataSet(c, b, typeR)
 	                            # Send Push notification of change record
 	                            change = "increased"
 	                            if b['price'] >= c['price']:
@@ -88,8 +88,10 @@ def handleDifference(before, current, typeR="daily"):
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
+                fetcher.storeDaily(db, current)
             if typeR == "monthly":
                 fetcher.storeMostRecentMonthly(db, current)
+                fetcher.storeMonthly(db, current)
         else:
             print "no new record found"
     else:

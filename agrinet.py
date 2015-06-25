@@ -202,13 +202,6 @@ def daily_dates_list(date = None):
 			res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
 			return json_util.dumps(res)
 
-		
-			
-
-			
-	
-
-
 	except Exception, e:
 		print e
 
