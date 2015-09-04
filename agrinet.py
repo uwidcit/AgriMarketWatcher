@@ -127,7 +127,7 @@ def crops_list():
 	crops = mongo.db.daily.distinct("commodity")
 	return json_util.dumps(crops)
 
-@app.route('/crops/categories')													# Returns the list of categories to which crops can belong
+@app.route('/crops/categories')										# Returns the list of categories to which crops can belong
 @app.route('/crops/categories/<category>')							# Returns the crops that belong to the category
 @crossdomain(origin='*')
 def crop_categories(category = None):
@@ -147,7 +147,7 @@ def crops_id(id=None):
 	res = []
 	options = {}
 	offset = 0
-	limit = 10
+	limit = 100
 	try:
 		if id:
 			crops = mongo.db.daily.find({"_id":objectid.ObjectId(id)})
@@ -173,7 +173,7 @@ def daily_dates_list(date = None):
 	res = []
 	options = {}
 	offset = 0
-	limit = 10
+	limit = 100
 	try:
 		if date:
 			try: 																						#check if the date is either in one of the two supported formats
@@ -232,7 +232,7 @@ def crop_daily_categories(category=None):
 	res = []
 	options = {}
 	offset = 0
-	limit = 10
+	limit = 100
 
 	if len(request.args) > 0:
 		if request.args.get("limit"):											#Check limit to determine how much records to return
@@ -298,7 +298,7 @@ def monthly_crops(date = None):
 	res = []
 	options = {}
 	offset = 0
-	limit = 10
+	limit = 100
 	try:
 		if date:
 			if date != "all":												#if the date is all then no specified date query will return all
@@ -333,7 +333,7 @@ def monthly_crop_category(category = None):
 	res = []
 	options = {}
 	offset = 0
-	limit = 10
+	limit = 100
 
 	try:
 		if category:
