@@ -39,10 +39,14 @@ def formatMessage(currrec,prevrec, type="daily"):
 	return message
 
 def updateGeneralDataSet(curr, prev, typeR="daily"):
+	print "Updating General Dataset"
 	db = connect2DB()
 	if db:
 		if typeR == "daily":
 			dateRec = db.daily.find().sort("date", -1).limit(1)
+			print "Previous Date: ", dateRec[0]['date'], " Current Date: ", curr['date']
+			print "Current Date " + str(len(curr))
+
 			if dateRec[0]['date'] != curr['date']:
 				db.daily.insert(curr)
 				print "from ", dateRec[0]['date'], " to", curr['date']
@@ -50,7 +54,7 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
 			dateRec = db.monthly.find().sort("date", -1).limit(1)
 			if dateRec[0]['date'] != curr['date']:
 				db.monthly.insert(curr)
-				print "from ", dateRec[0]['date'], " to", curr['date']
+				print "from ", dateRec[0]['date'], " to ", curr['date']
 
 def handleDifference(before, current, typeR="daily"):
     db = connect2DB()
@@ -65,7 +69,7 @@ def handleDifference(before, current, typeR="daily"):
 	                        if abs(b['price'] - c['price']) > MIN_DIFF:
 	                            print "price for ", b['commodity'], " changed"
 	                            # Add new record to the general dataset
-	                            updateGeneralDataSet(c, b, typeR)
+	                            # updateGeneralDataSet(c, b, typeR)
 	                            # Send Push notification of change record
 	                            change = "increased"
 	                            if b['price'] >= c['price']:
@@ -80,12 +84,14 @@ def handleDifference(before, current, typeR="daily"):
 	                        if pred != -1:
 	                        	newRec = {"name" : c['commodity'], "price" : pred}
 	                        	db.predictions.insert(newRec)
-	                        breaktypeR
+	                        # breaktypeR
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
+                fetcher.storeDaily(db, current)
             if typeR == "monthly":
                 fetcher.storeMostRecentMonthly(db, current)
+                fetcher.storeMonthly(db, current)
         else:
             print "no new record found"
     else:
