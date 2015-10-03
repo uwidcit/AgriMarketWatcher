@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, make_response, url_for,render_template, current_app
-from flask.ext.pymongo import PyMongo
+from pymongo import MongoClient
 import pymongo
 from bson import json_util, objectid
 from datetime import datetime, timedelta
@@ -12,10 +12,12 @@ from functools import update_wrapper
 app = Flask(__name__)
 app.debug = True
 
-app.config['MONGO_URI'] = "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461"
+# app.config['MONGO_URI'] = "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461"
 # app.config['MONGO_AUTO_START_REQUEST'] = False;
 # app.config['MONGO_URI'] = "mongodb://localhost/agrinet";
-mongo = PyMongo(app)
+# mongo = PyMongo(app)
+mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+mongo.db = mongo['heroku_app24455461']
 
 
 def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True,automatic_options=True):
