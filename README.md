@@ -10,7 +10,9 @@ The server code provides the following features:
 * Checks the NAMIS system periodically to determine changes in the prices of the commodities tracked by NAMDEVCO
 * Converts the Excel dataset into a simple reusable JSON-based API 
 
-
+## PushPad
+use pip install pushpad
+In order to subscribe for notifications use link https://pushpad.xyz/p/2797 
 
 ### Dependencies
 install libblas-dev liblapack-dev python-dev libatlas-base-dev gfortran libffi-dev libssl-dev

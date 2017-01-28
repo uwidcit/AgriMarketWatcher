@@ -1,11 +1,19 @@
 import fetcher
 import predict
+import pushpad
 from pymongo import MongoClient
 import pymongo
 import datetime
 import copy
 from parse_rest.installation import Push
 from parse_rest.connection import register
+
+import pushpad
+
+project = pushpad.Pushpad(auth_token='dda83a8f5724667805b11c963f907eeb', project_id=2797)
+
+
+
 
 register("ZEYEsAFRRgxjy0BXX1d5BJ2xkdJtsjt8irLTEnYJ", "iDYiJeZSwhDURPRpQexM9UvcVkj5AfVAhduCvCsB", master_key="3Qd3xFV3S9hrGJCnICMA4rNGbPMblahdFGhiwwGa")
 
@@ -77,8 +85,22 @@ def handleDifference(before, current, typeR="daily"):
 	                            message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
 	                            name = b['commodity'].replace(" ", "")
 	                            idx = name.find("(")
-	                            Push.message(message, channels=[name[0:idx]])
+				    
+				    channels=name[0:idx]
+	                            notification = pushpad.Notification(project,
+					    body=message, # max 120 characters
+					    title="Agrinett", # optional, defaults to your project name, max 30 characters
+					    target_url="http://www.namistt.com/",  # optional, defaults to your project website
+					    icon_url="http://cdn.apk-cloud.com/detail/image/uwi.dcit.AgriExpenseTT-w130.png",
+					    ttl=604800 # optional, drop the notification after this number of seconds if a device is offline
+					)
+
+
+				    notification.broadcast() # sends to everyone subscribed
+
+				   # Push.message(message, channels=[name[0:idx]])
 	                        else:
+				 
 	                            print "price for ", b['commodity'], " remained the same"
 	                        pred = predict.run(c['commodity'])
 	                        if pred != -1:
