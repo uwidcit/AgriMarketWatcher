@@ -213,7 +213,7 @@ def storeMonthly(db, mData):
 
 def storeDaily(db, dData):
     length = 0
-    if (dData and len(dData) > 0):
+    if dData and len(dData) > 0:
         daily = db.daily
         daily.insert(dData)
         length = daily.count()
@@ -222,7 +222,7 @@ def storeDaily(db, dData):
 
 def storeMostRecentDaily(db, dData):
     length = 0
-    if (dData and len(dData) > 0):
+    if dData and len(dData) > 0:
         db.drop_collection("dailyRecent")
         recent_daily = db.dailyRecent
         recent_daily.insert(dData)
