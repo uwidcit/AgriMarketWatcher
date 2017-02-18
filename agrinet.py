@@ -1,4 +1,6 @@
-from flask import Flask, request, jsonify, make_response, url_for,render_template, current_app
+from flask import Flask, request, jsonify, make_response, url_for, render_template, current_app
+from flask_autodoc.autodoc import Autodoc
+
 from pymongo import MongoClient
 import pymongo
 from bson import json_util, objectid
@@ -10,17 +12,20 @@ import fetcher
 from functools import update_wrapper
 
 app = Flask(__name__)
-app.debug = True
+# https://github.com/acoomans/flask-autodoc
+auto = Autodoc(app)
 
-# app.config['MONGO_URI'] = "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461"
-# app.config['MONGO_AUTO_START_REQUEST'] = False;
-# app.config['MONGO_URI'] = "mongodb://localhost/agrinet";
-# mongo = PyMongo(app)
+# Detect If Running in Development mode or on server
+if "ENV" in os.environ:
+    app.debug = False
+else:
+    app.debug = True
+
 mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 mongo.db = mongo['heroku_app24455461']
 
 
-def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True,automatic_options=True):
+def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):
 	if methods is not None:
 		methods = ', '.join(sorted(x.upper() for x in methods))
 	if headers is not None and not isinstance(headers, basestring):
@@ -61,6 +66,7 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 		return update_wrapper(wrapped_function, f)
 	return decorator
 
+
 #Helper/Utility functions
 def convert_compatible_json(crop):
 	crop["date"] = crop["date"].strftime('%Y-%m-%dT%H:%M:%S')	#convert the date object to a string
@@ -68,7 +74,7 @@ def convert_compatible_json(crop):
 	del crop["_id"] 																			#remove original key
 	return crop
 
-def process_results(cursor):									
+def process_results(cursor):
 	res = []
 	for c in cursor:											#Iterates through each result from the mongodb result cursor
 		res.append(convert_compatible_json(c))					#Pushes (appends) result to a list of results
@@ -124,6 +130,7 @@ def about():
 #Returns the list of crops available
 @app.route('/crops/crops')
 @app.route('/crops')
+@auto.doc()
 @crossdomain(origin='*')
 def crops_list():
 	crops = []
@@ -132,6 +139,7 @@ def crops_list():
 
 @app.route('/crops/categories')										# Returns the list of categories to which crops can belong
 @app.route('/crops/categories/<category>')							# Returns the crops that belong to the category
+@auto.doc()
 @crossdomain(origin='*')
 def crop_categories(category = None):
 	res = []
@@ -145,6 +153,7 @@ def crop_categories(category = None):
 # Daily API
 @app.route('/crops/daily')															#Returns all the daily priceses
 @app.route('/crops/daily/<id>')													#Returns the daily price for a sepcific crop
+@auto.doc()
 @crossdomain(origin='*')
 def crops_id(id=None):
 	res = []
@@ -171,6 +180,7 @@ def crops_id(id=None):
 
 @app.route("/crops/daily/dates") 												#returns all the daily dates available
 @app.route("/crops/daily/dates/<date>")									#returns the commodities for the date specified
+@auto.doc()
 @crossdomain(origin='*')
 def daily_dates_list(date = None):
 	res = []
@@ -211,6 +221,7 @@ def daily_dates_list(date = None):
 
 @app.route('/crops/daily/recent')												# Returns the daily prices of the most recent entry
 @app.route('/crops/daily/recent/<crop>')								# Returns the most recent daily price of the specified comodity
+@auto.doc()
 @crossdomain(origin='*')
 def most_recent_daily_data(crop = None):
 	if crop:
@@ -223,6 +234,7 @@ def most_recent_daily_data(crop = None):
 
 @app.route('/crops/daily/category')
 @app.route('/crops/daily/category/<category>')
+@auto.doc()
 @crossdomain(origin='*')
 def crop_daily_categories(category=None):
 	res = []
@@ -248,6 +260,7 @@ def crop_daily_categories(category=None):
 
 @app.route('/crops/daily/commodity')
 @app.route('/crops/daily/commodity/<commodity>')
+@auto.doc()
 @crossdomain(origin='*')
 def crop_daily_commodity(commodity=None):
 	res = []
@@ -266,6 +279,7 @@ def crop_daily_commodity(commodity=None):
 
 @app.route('/crops/daily/predict')												# Returns the daily prices of the most recent entry
 @app.route('/crops/daily/predict/<crop>')								# Returns the most recent daily price of the specified comodity
+@auto.doc()
 @crossdomain(origin='*')
 def prediction_data(crop = None):
 	if crop:
@@ -278,6 +292,7 @@ def prediction_data(crop = None):
 #Monthly API
 
 @app.route("/crops/monthly/dates")
+@auto.doc()
 @crossdomain(origin='*')
 def monthly_dates_list():
 	end = datetime.now()
@@ -289,6 +304,7 @@ def monthly_dates_list():
 
 @app.route('/crops/monthly')
 @app.route('/crops/monthly/<date>')
+@auto.doc()
 @crossdomain(origin='*')
 def monthly_crops(date = None):
 	res = []
@@ -324,6 +340,7 @@ def monthly_crops(date = None):
 
 @app.route('/crops/monthly/category/')
 @app.route('/crops/monthly/category/<category>')
+@auto.doc()
 @crossdomain(origin='*')
 def monthly_crop_category(category = None):
 	res = []
@@ -353,6 +370,7 @@ def monthly_crop_category(category = None):
 
 @app.route('/crops/monthly/commodity/')
 @app.route('/crops/monthly/commodity/<commodity>')
+@auto.doc()
 @crossdomain(origin='*')
 def monthly_crop_commodity(commodity = None):
 	res = []
@@ -387,6 +405,10 @@ def monthly_crop_commodity(commodity = None):
 	return json_util.dumps(res,default=json_util.default)
 
 
+@app.route('/documentation')
+def documentation():
+    return auto.html()
+
 @app.route('/api/test/fetch')
 def test_fetcher():
 	recsCurrent = fetcher.getMostRecent()
@@ -403,5 +425,4 @@ def login():
 
 if __name__ == "__main__":
 	port = int(os.environ.get("PORT", 5000))
-	# app.run(host = '127.0.0.1', port = port)
 	app.run(host='0.0.0.0', port=port)
