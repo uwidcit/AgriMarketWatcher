@@ -22,7 +22,7 @@ def sendFire(recsCurrent):
 	
 
 def sendRecent(recsCurrent):
-	crops =recsCurrent
+		crops =recsCurrent
 		market = ["NWM","OVFM","POS"]
 		dates = crops[0]['date'].ctime().split( )
 		year = dates[4]
