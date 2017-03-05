@@ -1,6 +1,7 @@
 import fetcher
 import fire
 import predict
+import fcm
 from pymongo import MongoClient
 import datetime
 import copy
@@ -59,10 +60,9 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
                 db.monthly.insert(curr)
                 print "from ", dateRec[0]['date'], " to ", curr['date']
 
-
 def handleDifference(before, current, typeR="daily"):
     db = connect2DB()
-    if before is not None and current is not None:
+    if before != None and current != None:
         print "Before " + before[0]['date'].ctime()
         print "Current " + current[0]['date'].ctime()
         if before[0]['date'].ctime() != current[0]['date'].ctime():
@@ -78,33 +78,32 @@ def handleDifference(before, current, typeR="daily"):
                                 change = "increased"
                                 if b['price'] >= c['price']:
                                     change = "decreased"
-                                message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c[
-                                    'unit']
+                                message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
                                 name = b['commodity'].replace(" ", "")
                                 idx = name.find("(")
-                                # Push.message(message, channels=[name[0:idx]])
-                                fcm.notify(message, name)
-                                else:
-                                    print "price for ", b['commodity'], " remained the same"
-                                pred = predict.run(c['commodity'])
-                                if pred != -1:
-                                	newRec = {"name" : c['commodity'], "price" : pred}
-                                	db.predictions.insert(newRec)
-#                                 breaktypeR
+                                fcm.notify(message,name)
+                            else:
+                 
+                                print "price for ", b['commodity'], " remained the same"
+                            pred = predict.run(c['commodity'])
+                            if pred != -1:
+                                newRec = {"name" : c['commodity'], "price" : pred}
+                                db.predictions.insert_one(newRec)
+                            # breaktypeR
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
                 fetcher.storeDaily(db, current)
                 fire.sendFire(current)
+                fire.sendRecent(current)
             if typeR == "monthly":
+                print current
                 fetcher.storeMostRecentMonthly(db, current)
                 fetcher.storeMonthly(db, current)
         else:
             print "no new record found"
     else:
         print "Doesn't exist"
-
-
 def run():
     db = connect2DB()
     if db:
