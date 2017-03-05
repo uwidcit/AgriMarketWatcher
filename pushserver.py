@@ -1,4 +1,6 @@
 import fetcher
+import fire
+import predict
 from pymongo import MongoClient
 import datetime
 import copy
@@ -82,13 +84,13 @@ def handleDifference(before, current, typeR="daily"):
                                 idx = name.find("(")
                                 # Push.message(message, channels=[name[0:idx]])
                                 fcm.notify(message, name)
-                                # else:
-                                #     print "price for ", b['commodity'], " remained the same"
-                                # pred = predict.run(c['commodity'])
-                                # if pred != -1:
-                                # 	newRec = {"name" : c['commodity'], "price" : pred}
-                                # 	db.predictions.insert(newRec)
-                                # breaktypeR
+                                else:
+                                    print "price for ", b['commodity'], " remained the same"
+                                pred = predict.run(c['commodity'])
+                                if pred != -1:
+                                	newRec = {"name" : c['commodity'], "price" : pred}
+                                	db.predictions.insert(newRec)
+#                                 breaktypeR
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
