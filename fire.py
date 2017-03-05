@@ -2,8 +2,8 @@ from firebase import firebase
 from firebase_token import firebase
 import fetcher
 import datetime
-import copy
-from parse_rest.connection import register
+
+Firebase =firebase.FirebaseApplication('https://agriprice-6638d.firebaseio.com/')
 
 
 def sendFire(recsCurrent):
