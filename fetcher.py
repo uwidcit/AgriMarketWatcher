@@ -5,7 +5,7 @@ from datetime import datetime
 from xlrd import open_workbook
 from pymongo import MongoClient
 import pymongo
-import json
+# import beyo
 import time
 import datetime
 
@@ -13,11 +13,11 @@ category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
 
 
-# Extracts the data from a row and returns a dictionary 
+# Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
 # @param row : the row number to be processed
 # @param category : the category of the crop the be considered
-# @return : a dictionary representing the data at the specified row 
+# @return : a dictionary representing the data at the specified row
 #           for a particular sheet
 def processDaily(sheet, row, category):
     dic = {
@@ -106,7 +106,7 @@ def traverseWorkbook(url, params={}, workbook_type="daily"):
                     rowData = processRow(s, row, workbook_type)
                     if rowData:
                         values.append(rowData)
-        return values;
+        return values
     except Exception, e:
         # print "Error in reading workbook at ", url, e
         print "Error traversing workbook", e
@@ -273,7 +273,6 @@ def getMostRecent():
     try:
         months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
                   "November", "December"]
-        client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 
         day = int(time.strftime("%d"))
         month_num = int(time.strftime("%m"))
@@ -318,17 +317,6 @@ def getMostRecent():
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
-        # if reset_daily:
-        #	break
-
-        # db = client.get_default_database()
-        # if reset_daily and d:
-        #	print len(d)
-        #	storeMostRecentDaily(db, d)
-
-        # if reset_monthly and m:
-        #	print len(m)
-        #	storeMostRecentMonthly(db, m)
 
         return {"monthly": m, "daily": d}
 
@@ -343,7 +331,7 @@ def getMostRecent():
 
 # print getMostRecent()
 
-def runGetAll():
+def runGetAll(save=False):
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
               "November", "December"]
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
@@ -372,32 +360,34 @@ def runGetAll():
                     reset_daily = True
                     daily.extend(d)
                     most_recent_daily = d
-    try:
-        # Connect to the Database
-        client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-        db = client.get_default_database()
-
-        # If we have a new set of data for the daily information, we insert that into the database
-
-        if reset_daily:
-            print "resetting daily"
-            storeMostRecentDaily(db, most_recent_daily)
-
-        # If we have a new set of monthly data, we write that to the database
-        if reset_monthly:
-            print "resetting monthly"
-            storeMostRecentMonthly(db, most_recent_monthly)
-
-        db.drop_collection("monthly")
-        print "Months " + str(len(monthly))
-        print "Stored " + str(storeMonthly(db, monthly))
-
-        db.drop_collection("daily")
-        print "Daily " + str(len(daily))
-        print "Stored " + str(storeDaily(db, daily))
-
-    except pymongo.errors.ConnectionFailure, e:
-        print e
+    
+    if save:
+        try:
+            # Connect to the Database
+            client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+            db = client.get_default_database()
+    
+            # If we have a new set of data for the daily information, we insert that into the database
+    
+            if reset_daily:
+                print "resetting daily"
+                storeMostRecentDaily(db, most_recent_daily)
+    
+            # If we have a new set of monthly data, we write that to the database
+            if reset_monthly:
+                print "resetting monthly"
+                storeMostRecentMonthly(db, most_recent_monthly)
+    
+            db.drop_collection("monthly")
+            print "Months " + str(len(monthly))
+            print "Stored " + str(storeMonthly(db, monthly))
+    
+            db.drop_collection("daily")
+            print "Daily " + str(len(daily))
+            print "Stored " + str(storeDaily(db, daily))
+    
+        except pymongo.errors.ConnectionFailure, e:
+            print e
 
 
 # runGetAll() # run and extract the files from the server
@@ -452,3 +442,8 @@ def testIndivid():
         print e
 
         # testIndivid()
+
+
+if __name__ == "__main__":
+    print("Running GET all. Not saving")
+    runGetAll()
