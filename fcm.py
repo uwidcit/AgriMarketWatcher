@@ -30,7 +30,7 @@ def notify(message_body1,crop):
 		"icon":"icon",
 		"color":"#80"
 	}
-	result = push_service.notify_topic_subscribers(topic_name = topic,message_title=message_title, message_body=message_body,data_message=data_message);
+	result = push_service.notify_topic_subscribers(topic_name = topic,message_title=message_title, message_body=message_body1,data_message=data_message);
 
 
 def change(value):
