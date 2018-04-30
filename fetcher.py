@@ -13,11 +13,11 @@ category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
 
 
-# Extracts the data from a row and returns a dictionary 
+# Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
 # @param row : the row number to be processed
 # @param category : the category of the crop the be considered
-# @return : a dictionary representing the data at the specified row 
+# @return : a dictionary representing the data at the specified row
 #           for a particular sheet
 def processDaily(sheet, row, category):
     dic = {
@@ -223,7 +223,7 @@ def storeDaily(db, dData):
 def storeMostRecentDaily(db, dData):
     length = 0
     if dData and len(dData) > 0:
-        db.drop_collection("dailyRecent")
+        # db.drop_collection("dailyRecent")
         recent_daily = db.dailyRecent
         recent_daily.insert(dData)
         length = recent_daily.count()
@@ -233,7 +233,7 @@ def storeMostRecentDaily(db, dData):
 def storeMostRecentMonthly(db, dData):
     length = 0
     if (dData and len(dData) > 0):
-        db.drop_collection("recentMonthly")
+        # db.drop_collection("recentMonthly")
         recent_monthly = db.recentMonthly
         recent_monthly.insert(dData)
         length = recent_monthly.count()
@@ -244,7 +244,7 @@ def storeMostRecentMonthly(db, dData):
 # Create a document in the MongoDB database that stores the the most recent data in the database separately from
 # the rest of the data in addition to loading the the data together with the current data
 # we can then simply use the appropriate url to access the most recent data from the MongoDB
-# 1.  
+# 1.
 
 # To prevent the repeated parsing of xls files, we can store a list of read xls files
 
@@ -355,7 +355,7 @@ def runGetAll():
     reset_daily = False
     reset_monthly = False
 
-    for year in range(2007, 2015):
+    for year in range(2017, 2019):
         for month in months:
 
             # extract monthly reports
@@ -452,3 +452,6 @@ def testIndivid():
         print e
 
         # testIndivid()
+
+
+# runGetAll();
