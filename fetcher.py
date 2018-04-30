@@ -13,11 +13,11 @@ category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
 
 
-# Extracts the data from a row and returns a dictionary
+# Extracts the data from a row and returns a dictionary 
 # @param sheet : the sheet to be processed
 # @param row : the row number to be processed
 # @param category : the category of the crop the be considered
-# @return : a dictionary representing the data at the specified row
+# @return : a dictionary representing the data at the specified row 
 #           for a particular sheet
 def processDaily(sheet, row, category):
     dic = {
@@ -106,7 +106,7 @@ def traverseWorkbook(url, params={}, workbook_type="daily"):
                     rowData = processRow(s, row, workbook_type)
                     if rowData:
                         values.append(rowData)
-        return values;
+        return values
     except Exception, e:
         # print "Error in reading workbook at ", url, e
         print "Error traversing workbook", e
@@ -452,6 +452,3 @@ def testIndivid():
         print e
 
         # testIndivid()
-
-
-# runGetAll();
