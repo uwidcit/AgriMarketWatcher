@@ -51,7 +51,7 @@ if __name__ == "__main__":
 		"title":message_title,
 	}
 
-	result = push_service.notify_topic_subscribers(topic_name = 'carrot',message_title=message_title, message_body=message_body,message_icon=message_icon,data_message=data_message,color="#80")
+	# result = push_service.notify_topic_subscribers(topic_name = 'carrot',message_title=message_title, message_body=message_body,message_icon=message_icon,data_message=data_message,color="#80")
 
-	print result
+	# print result
 	#
