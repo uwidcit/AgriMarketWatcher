@@ -83,7 +83,7 @@ def handleDifference(before, current, typeR="daily"):
                                 idx = name.find("(")
                                 fcm.notify(message,name)
                             else:
-                 
+
                                 print "price for ", b['commodity'], " remained the same"
                             pred = predict.run(c['commodity'])
                             if pred != -1:
