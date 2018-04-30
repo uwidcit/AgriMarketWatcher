@@ -5,10 +5,7 @@ import fcm
 from pymongo import MongoClient
 import datetime
 import copy
-from parse_rest.connection import register
 
-register("ZEYEsAFRRgxjy0BXX1d5BJ2xkdJtsjt8irLTEnYJ", "iDYiJeZSwhDURPRpQexM9UvcVkj5AfVAhduCvCsB",
-         master_key="3Qd3xFV3S9hrGJCnICMA4rNGbPMblahdFGhiwwGa")
 
 MIN_DIFF = 1.0
 

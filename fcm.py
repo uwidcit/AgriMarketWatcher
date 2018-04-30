@@ -1,6 +1,5 @@
 # Send to single device.
 from pyfcm import FCMNotification
-from firebase_token import firebase
 from firebase import firebase
 
 
