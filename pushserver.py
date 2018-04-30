@@ -91,8 +91,8 @@ def handleDifference(before, current, typeR="daily"):
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
                 fetcher.storeDaily(db, current)
-                fire.sendFire(current)
-                fire.sendRecent(current)
+                # fire.sendFire(current)
+                # fire.sendRecent(current)
             if typeR == "monthly":
                 print current
                 fetcher.storeMostRecentMonthly(db, current)
@@ -101,6 +101,7 @@ def handleDifference(before, current, typeR="daily"):
             print "no new record found"
     else:
         print "Doesn't exist"
+
 def run():
     db = connect2DB()
     if db:
