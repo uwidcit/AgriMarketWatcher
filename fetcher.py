@@ -13,11 +13,11 @@ category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
 
 
-# Extracts the data from a row and returns a dictionary 
+# Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
 # @param row : the row number to be processed
 # @param category : the category of the crop the be considered
-# @return : a dictionary representing the data at the specified row 
+# @return : a dictionary representing the data at the specified row
 #           for a particular sheet
 def processDaily(sheet, row, category):
     dic = {
@@ -205,7 +205,7 @@ def storeMonthly(db, mData):
     length = 0
     if (len(mData) > 0):
         monthly = db.monthly
-        monthly.insert(mData)
+        monthly.insert_one(mData)
         length = monthly.count()
 
     return length
@@ -215,7 +215,7 @@ def storeDaily(db, dData):
     length = 0
     if dData and len(dData) > 0:
         daily = db.daily
-        daily.insert(dData)
+        daily.insert_one(dData)
         length = daily.count()
     return length
 
@@ -223,9 +223,9 @@ def storeDaily(db, dData):
 def storeMostRecentDaily(db, dData):
     length = 0
     if dData and len(dData) > 0:
-        # db.drop_collection("dailyRecent")
+        db.drop_collection("dailyRecent")
         recent_daily = db.dailyRecent
-        recent_daily.insert(dData)
+        recent_daily.insert_one(dData)
         length = recent_daily.count()
     return length
 
@@ -233,9 +233,9 @@ def storeMostRecentDaily(db, dData):
 def storeMostRecentMonthly(db, dData):
     length = 0
     if (dData and len(dData) > 0):
-        # db.drop_collection("recentMonthly")
+        db.drop_collection("recentMonthly")
         recent_monthly = db.recentMonthly
-        recent_monthly.insert(dData)
+        recent_monthly.insert_one(dData)
         length = recent_monthly.count()
     return length
 
@@ -265,7 +265,7 @@ def get_processed_sheets(db):
 
 # Logs sheets that have just been processed into the database
 def log_sheet_as_processed(db, sheet):
-    db.processed.insert({'url': sheet})
+    db.processed.insert_one({'url': sheet})
 
 
 def getMostRecent():
@@ -452,3 +452,4 @@ def testIndivid():
         print e
 
         # testIndivid()
+# runGetAll();

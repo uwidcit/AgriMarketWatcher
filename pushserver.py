@@ -49,12 +49,12 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
             print "Current Date " + str(len(curr))
 
             if dateRec[0]['date'] != curr['date']:
-                db.daily.insert(curr)
+                db.daily.insert_one(curr)
                 print "from ", dateRec[0]['date'], " to", curr['date']
         else:  # monthly
             dateRec = db.monthly.find().sort("date", -1).limit(1)
             if dateRec[0]['date'] != curr['date']:
-                db.monthly.insert(curr)
+                db.monthly.insert_one(curr)
                 print "from ", dateRec[0]['date'], " to ", curr['date']
 
 def handleDifference(before, current, typeR="daily"):
@@ -80,7 +80,7 @@ def handleDifference(before, current, typeR="daily"):
                                 idx = name.find("(")
                                 fcm.notify(message,name)
                             else:
-                 
+
                                 print "price for ", b['commodity'], " remained the same"
                             pred = predict.run(c['commodity'])
                             if pred != -1:
