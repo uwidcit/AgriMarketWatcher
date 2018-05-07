@@ -158,6 +158,7 @@ def retrieveDaily(base_url, day, month, year):
         month = months.index(month) + 1
 
     url = base_url + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls";
+    print url
     print "time: " + str(day) + "-" + str(mStr) + "-" + str(year)
 
     result = traverseWorkbook(url)
@@ -315,6 +316,7 @@ def getMostRecent():
                     print "Found valid data"
                     reset_daily = True
                     break
+
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
@@ -322,13 +324,15 @@ def getMostRecent():
         #	break
 
         # db = client.get_default_database()
-        # if reset_daily and d:
-        #	print len(d)
-        #	storeMostRecentDaily(db, d)
-
+            if reset_daily and d:
+            	print len(d)
+                storeMostRecentDaily(db,d)
+        #     storeDaily(db,d)
+        #
         # if reset_monthly and m:
-        #	print len(m)
-        #	storeMostRecentMonthly(db, m)
+        # 	print len(m)
+        # 	storeMostRecentMonthly(db, m)
+        #     storeMonthly(db,m)
 
         return {"monthly": m, "daily": d}
 
@@ -453,3 +457,4 @@ def testIndivid():
 
         # testIndivid()
 # runGetAll();
+# getMostRecent();
