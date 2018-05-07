@@ -205,7 +205,7 @@ def storeMonthly(db, mData):
     length = 0
     if (len(mData) > 0):
         monthly = db.monthly
-        monthly.insert_one(mData)
+        monthly.insert(mData)
         length = monthly.count()
 
     return length
@@ -215,7 +215,7 @@ def storeDaily(db, dData):
     length = 0
     if dData and len(dData) > 0:
         daily = db.daily
-        daily.insert_one(dData)
+        daily.insert(dData)
         length = daily.count()
     return length
 
@@ -225,7 +225,7 @@ def storeMostRecentDaily(db, dData):
     if dData and len(dData) > 0:
         db.drop_collection("dailyRecent")
         recent_daily = db.dailyRecent
-        recent_daily.insert_one(dData)
+        recent_daily.insert(dData)
         length = recent_daily.count()
     return length
 
@@ -235,7 +235,7 @@ def storeMostRecentMonthly(db, dData):
     if (dData and len(dData) > 0):
         db.drop_collection("recentMonthly")
         recent_monthly = db.recentMonthly
-        recent_monthly.insert_one(dData)
+        recent_monthly.insert(dData)
         length = recent_monthly.count()
     return length
 
@@ -265,7 +265,7 @@ def get_processed_sheets(db):
 
 # Logs sheets that have just been processed into the database
 def log_sheet_as_processed(db, sheet):
-    db.processed.insert_one({'url': sheet})
+    db.processed.insert({'url': sheet})
 
 
 def getMostRecent():
