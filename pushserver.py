@@ -1,11 +1,12 @@
 import fetcher
-import fire
-import predict
+import fisheries
+# import fire
+# import predict
 import fcm
 from pymongo import MongoClient
 import datetime
 import copy
-
+import logging
 
 MIN_DIFF = 1.0
 
@@ -57,9 +58,10 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
                 db.monthly.insert(curr)
                 print "from ", dateRec[0]['date'], " to ", curr['date']
 
+
 def handleDifference(before, current, typeR="daily"):
     db = connect2DB()
-    if before != None and current != None:
+    if before is not None and current is not None:
         print "Before " + before[0]['date'].ctime()
         print "Current " + current[0]['date'].ctime()
         if before[0]['date'].ctime() != current[0]['date'].ctime():
@@ -78,14 +80,14 @@ def handleDifference(before, current, typeR="daily"):
                                 message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
                                 name = b['commodity'].replace(" ", "")
                                 idx = name.find("(")
-                                fcm.notify(message,name)
+                                fcm.notify(message, name)
                             else:
-
                                 print "price for ", b['commodity'], " remained the same"
-                            pred = predict.run(c['commodity'])
-                            if pred != -1:
-                                newRec = {"name" : c['commodity'], "price" : pred}
-                                db.predictions.insert(newRec)
+                            # Attempt to predict crops (NB disabled for time being)
+                            # pred = predict.run(c['commodity'])
+                            # if pred != -1:
+                            #     newRec = {"name" : c['commodity'], "price" : pred}
+                            #     db.predictions.insert(newRec)
                             # breaktypeR
 
             if typeR == "daily":
@@ -102,13 +104,24 @@ def handleDifference(before, current, typeR="daily"):
     else:
         print "Doesn't exist"
 
+
 def run():
     db = connect2DB()
     if db:
-        recsCurrent = fetcher.getMostRecent()
-        if recsCurrent:
-            handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
-            handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
+        # Attempt to retrieve Crops Information
+        try:
+            recsCurrent = fetcher.getMostRecent()
+            if recsCurrent:
+                handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
+                handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
+        except Exception as e:
+            logging.error(e)
+
+        # Attempt to retrieve Fishing Information
+        try:
+            fisheries.getMostRecentFish()
+        except Exception as e:
+            logging.error(e)
 
 
 def daily_converter(rec):
@@ -131,7 +144,6 @@ def conversionTesting():
 
         handleDifference(recsD, recs2)
 
-# conversionTesting();
 
 if __name__ == "__main__":
     print "Attempting To Run the server"

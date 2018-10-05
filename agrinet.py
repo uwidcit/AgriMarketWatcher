@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response, url_for, render_template, current_app
+from flask import Flask, request, make_response, render_template, current_app
 from flask_autodoc.autodoc import Autodoc
 
 from pymongo import MongoClient
@@ -9,10 +9,11 @@ import os
 import fetcher
 
 from functools import update_wrapper
+from fisheries import fisheries_file
 
 app = Flask(__name__)
-# https://github.com/acoomans/flask-autodoc
-auto = Autodoc(app)
+app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
+auto = Autodoc(app)  # https://github.com/acoomans/flask-autodoc
 
 # Detect If Running in Development mode or on server
 if "ENV" in os.environ:
@@ -20,8 +21,10 @@ if "ENV" in os.environ:
 else:
     app.debug = True
 
-mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-mongo.db = mongo['heroku_app24455461']
+# mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+# mongo.db = mongo['heroku_app24455461']
+
+from dataManager import mongo
 
 
 def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):

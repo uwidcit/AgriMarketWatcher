@@ -38,10 +38,11 @@ def processDaily(sheet, row, category):
 
 
 def processMonthly(sheet, row, category):
-    dic = {}
-    dic['commodity'] = sheet.cell_value(row, 0).encode('ascii').lower()
-    dic['category'] = category.encode('ascii')
-    dic['unit'] = str(sheet.cell_value(row, 1)).encode('ascii')
+    dic = {
+        'commodity': sheet.cell_value(row, 0).encode('ascii').lower(),
+        'category': category.encode('ascii'),
+        'unit': str(sheet.cell_value(row, 1)).encode('ascii')
+    }
 
     if sheet.cell(row, 2) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
         dic['min'] = 0.0
@@ -131,7 +132,7 @@ def get_url(base_url, year, month, day=None):
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
               "November", "December"]
 
-    if (str(month).isdigit()):
+    if str(month).isdigit():
         print month
         mStr = months[int(month) - 1]
     else:
@@ -151,7 +152,7 @@ def retrieveDaily(base_url, day, month, year):
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
               "November", "December"]
 
-    if (str(month).isdigit()):
+    if str(month).isdigit():
         mStr = months[month - 1]
     else:
         mStr = month
@@ -180,7 +181,7 @@ def retrieveMonthly(base_url, month, year):
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
               "November", "December"]
 
-    if (str(month).isdigit()):
+    if str(month).isdigit():
         mStr = months[month - 1]
     else:
         mStr = month
@@ -204,7 +205,7 @@ def retrieveMonthly(base_url, month, year):
 
 def storeMonthly(db, mData):
     length = 0
-    if (len(mData) > 0):
+    if len(mData) > 0:
         monthly = db.monthly
         monthly.insert(mData)
         length = monthly.count()
@@ -233,7 +234,7 @@ def storeMostRecentDaily(db, dData):
 
 def storeMostRecentMonthly(db, dData):
     length = 0
-    if (dData and len(dData) > 0):
+    if dData and len(dData) > 0:
         db.drop_collection("recentMonthly")
         recent_monthly = db.recentMonthly
         recent_monthly.insert(dData)
@@ -320,26 +321,10 @@ def getMostRecent():
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
-        # if reset_daily:
-        #	break
-
-        # db = client.get_default_database()
-            if reset_daily and d:
-            	print len(d)
-                storeMostRecentDaily(db,d)
-        #     storeDaily(db,d)
-        #
-        # if reset_monthly and m:
-        # 	print len(m)
-        # 	storeMostRecentMonthly(db, m)
-        #     storeMonthly(db,m)
-
         return {"monthly": m, "daily": d}
 
-    except Exception, e:
+    except Exception as e:
         print e
-    else:
-        pass
     finally:
         pass
     return None
@@ -400,61 +385,9 @@ def runGetAll():
         print "Daily " + str(len(daily))
         print "Stored " + str(storeDaily(db, daily))
 
-    except pymongo.errors.ConnectionFailure, e:
+    except Exception as e:
         print e
 
 
 # runGetAll() # run and extract the files from the server
-
-def processDailyRec(rec, col):
-    print rec
-
-
-def testIndivid():
-    daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
-    d = retrieveDaily(daily_base_url, 19, "June", 2015)
-    print "daily " + str(len(d))
-    # # print d[0]
-
-    # m = retrieveMonthly("", "February", 2014)
-    # print "monthly "+ str(len(m))
-    # print m[0]
-
-    # # print d
-    # print m[0]["date"].strftime("%Y-%B-%d")
-
-    # client = MongoClient()
-    # db = client.agrinet
-    # daily = db.daily
-
-    # if d:
-    # 	print daily.insert(d)
-
-
-    try:
-        if d:
-            client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-            db = client.get_default_database()
-            print "daily " + str(len(d))
-
-            # db.drop_collection("daily")
-            # db.drop_collection("monthly")
-
-            daily = db.daily
-            # monthly  = db.monthly
-
-
-            # daily.insert(d)
-            # monthly.insert(m)
-
-
-            # print client.database_names()
-            # print daily.count()
-            # print monthly.count()
-
-    except pymongo.errors.ConnectionFailure, e:
-        print e
-
-        # testIndivid()
-# runGetAll();
 # getMostRecent();

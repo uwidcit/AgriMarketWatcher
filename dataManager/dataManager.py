@@ -6,6 +6,8 @@ from xlrd import open_workbook
 import os
 import json
 from datetime import datetime
+from pymongo import MongoClient
+import logging
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -181,6 +183,17 @@ class NDNWMDaily(DataSource):
 		self.url = "{0}/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-".format(self.base_url)
 		self.valid_list_path = "{0}/data/{1}_{2}_valid_url_list.json".format(dir_path,self.prefix, self.type)
 
+
+class DatabaseManager():
+
+	def getCurrentDB(self):
+		try:
+			client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+			db = client.get_default_database()
+			return db
+		except Exception as e:
+			logging.error(e)
+		return None
 	
 if __name__ == "__main__":
 	source = NDNWMDaily()
