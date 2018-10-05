@@ -84,6 +84,7 @@ def most_recent_daily_fish(fish=None):
 
 
 @fisheries_file.route('/fishes/markets')
+@crossdomain(origin='*')
 def market_list():
     markets = [{
         'name': 'Port of Spain Fish Market',
@@ -96,6 +97,7 @@ def market_list():
 
 
 @fisheries_file.route('/fishes/daily/recent/market/<market>')
+@crossdomain(origin='*')
 def most_recent_daily_fish_by_market(market):
     fishes = mongo.db.dailyFishRecent.find({"market": market})
     result = process_results(fishes)
