@@ -79,7 +79,6 @@ def handleDifference(before, current, typeR="daily"):
                                     change = "decreased"
                                 message = c['commodity'] + " has " + change + " to $" + str(c['price']) + " per " + c['unit']
                                 name = b['commodity'].replace(" ", "")
-                                idx = name.find("(")
                                 fcm.notify(message, name)
                             else:
                                 print "price for ", b['commodity'], " remained the same"

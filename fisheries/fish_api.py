@@ -6,7 +6,6 @@ from functools import update_wrapper
 
 fisheries_file = Blueprint('fisheries_file', __name__)
 
-
 def convert_compatible_json(fish):
     fish["date"] = fish["date"].strftime('%Y-%m-%dT%H:%M:%S')  # convert the date object to a string
     fish["id"] = str(fish["_id"])  # convert mongodb id to a string
@@ -71,20 +70,41 @@ def fish_list():
     return json_util.dumps(fishes, indent=4)
 
 
+# @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
+# @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
+# @crossdomain(origin='*')
+# # @auto.doc()
+# def most_recent_daily_fish(fish=None):
+#     if fish:
+#         fishes = mongo.db.dailyFishRecent.find({"commodity": fish})  # If we have a crop that we want to obtain
+#     else:
+#         fishes = mongo.db.dailyFishRecent.find()  # Else, if we want all crops
+#     result = process_results(fishes)
+#     return json_util.dumps(result, default=json_util.default, indent=4)
+
+
 @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
 @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
 @crossdomain(origin='*')
-def most_recent_daily_fish(fish=None):
+# @auto.doc()
+def most_recent_daily_fish_merged(fish=None):
     if fish:
         fishes = mongo.db.dailyFishRecent.find({"commodity": fish})  # If we have a crop that we want to obtain
     else:
-        fishes = mongo.db.dailyFishRecent.find()  # Else, if we want all crops
-    result = process_results(fishes)
-    return json_util.dumps(result, default=json_util.default, indent=4)
+        fishes = mongo.db.dailyFishRecent.find()
+    results = process_results(fishes)
+    fishesRecs = {}
+    for rec in results:
+        commodity = rec['commodity']
+        if commodity not in fishesRecs:
+            fishesRecs[commodity] = {}
+        fishesRecs[commodity][rec['market']] = rec
+    return json_util.dumps(fishesRecs, default=json_util.default, indent=4)
 
 
 @fisheries_file.route('/fishes/markets')
 @crossdomain(origin='*')
+# @auto.doc()
 def market_list():
     markets = [{
         'name': 'Port of Spain Fish Market',
@@ -98,6 +118,7 @@ def market_list():
 
 @fisheries_file.route('/fishes/daily/recent/market/<market>')
 @crossdomain(origin='*')
+# @auto.doc()
 def most_recent_daily_fish_by_market(market):
     fishes = mongo.db.dailyFishRecent.find({"market": market})
     result = process_results(fishes)
@@ -107,7 +128,8 @@ def most_recent_daily_fish_by_market(market):
 if __name__ == "__main__":  # executed by running python -m fisheries.fish_api from project root
     print("Running the API calls for simple validation")
     # print(fish_list())
-    print(market_list())
+    # print(market_list())
     # print(most_recent_daily_fish())
     # print(most_recent_daily_fish('pampano'))
-    print(most_recent_daily_fish_by_market("POSWFM"))
+    # print(most_recent_daily_fish_by_market("POSWFM"))
+    print(most_recent_daily_fish_merged())

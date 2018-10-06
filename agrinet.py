@@ -11,6 +11,15 @@ import fetcher
 from functools import update_wrapper
 from fisheries import fisheries_file
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
+    integrations=[FlaskIntegration()]
+)
+
+
 app = Flask(__name__)
 app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
 auto = Autodoc(app)  # https://github.com/acoomans/flask-autodoc
