@@ -68,7 +68,7 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 @crossdomain(origin='*')
 def fish_list():
     fishes = mongo.db.dailyFishRecent.distinct('commodity')
-    return json.dumps(fishes, indent=4)
+    return jsonify(fishes, indent=4)
     # return json_util.dumps(fishes, indent=4)
 
 
@@ -115,7 +115,7 @@ def market_list():
         'name': 'Orange Valley Fish Market',
         'code': 'OVWFM'
      }]
-    return json_util.dumps(markets, indent=4)
+    return jsonify(markets, indent=4)
 
 
 @fisheries_file.route('/fishes/daily/recent/market/<market>')
@@ -124,8 +124,8 @@ def market_list():
 def most_recent_daily_fish_by_market(market):
     fishes = mongo.db.dailyFishRecent.find({"market": market})
     result = process_results(fishes)
-    return json_util.dumps(result, default=json_util.default, indent=4)
-
+    # return json_util.dumps(result, default=json_util.default, indent=4)
+    return jsonify(result)
 
 if __name__ == "__main__":  # executed by running python -m fisheries.fish_api from project root
     print("Running the API calls for simple validation")
