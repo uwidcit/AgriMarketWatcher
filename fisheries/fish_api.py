@@ -68,7 +68,7 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 @crossdomain(origin='*')
 def fish_list():
     fishes = mongo.db.dailyFishRecent.distinct('commodity')
-    return jsonify(fishes, indent=4)
+    return jsonify(fishes)
     # return json_util.dumps(fishes, indent=4)
 
 
@@ -115,7 +115,7 @@ def market_list():
         'name': 'Orange Valley Fish Market',
         'code': 'OVWFM'
      }]
-    return jsonify(markets, indent=4)
+    return jsonify(markets)
 
 
 @fisheries_file.route('/fishes/daily/recent/market/<market>')
