@@ -3,6 +3,7 @@ from dataManager import mongo
 from bson import json_util
 from datetime import datetime, timedelta
 from functools import update_wrapper
+from flask import json, jsonify
 
 fisheries_file = Blueprint('fisheries_file', __name__)
 
@@ -67,7 +68,8 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 @crossdomain(origin='*')
 def fish_list():
     fishes = mongo.db.dailyFishRecent.distinct('commodity')
-    return json_util.dumps(fishes, indent=4)
+    return json.dumps(fishes, indent=4)
+    # return json_util.dumps(fishes, indent=4)
 
 
 # @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
@@ -99,8 +101,8 @@ def most_recent_daily_fish_merged(fish=None):
         if commodity not in fishesRecs:
             fishesRecs[commodity] = {}
         fishesRecs[commodity][rec['market']] = rec
-    return json_util.dumps(fishesRecs, default=json_util.default, indent=4)
-
+    # return json_util.dumps(fishesRecs, default=json_util.default, indent=4)
+    return jsonify(fishesRecs)
 
 @fisheries_file.route('/fishes/markets')
 @crossdomain(origin='*')
