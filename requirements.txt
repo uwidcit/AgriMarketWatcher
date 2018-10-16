@@ -16,7 +16,7 @@ Jinja2==2.8
 lazy-object-proxy==1.2.2
 MarkupSafe==0.23
 mccabe==0.6.1
-numpy==1.8.1
+numpy==1.15.2
 packaging==16.8
 pyfcm==1.4.5
 pylint==1.6.5
@@ -25,9 +25,9 @@ pyparsing==2.2.0
 python-firebase==1.2
 requests==2.7.0
 requests-toolbelt==0.8.0
-scikit-learn==0.14.1
+scikit-learn==0.20.0
 scipy==0.14.0
-sentry-sdk[flask]==0.3.9
+sentry-sdk==0.3.9
 six==1.10.0
 urllib3==1.10.4
 Werkzeug==0.10.4
