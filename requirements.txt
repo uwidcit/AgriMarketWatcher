@@ -25,7 +25,7 @@ pyparsing==2.2.0
 python-firebase==1.2
 requests==2.7.0
 requests-toolbelt==0.8.0
-scikit-learn==0.20.0
+#scikit-learn==0.20.0
 scipy==0.14.0
 sentry-sdk==0.3.9
 six==1.10.0
