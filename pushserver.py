@@ -2,11 +2,26 @@ import fetcher
 import fisheries
 # import fire
 # import predict
+import sys
 import fcm
 from pymongo import MongoClient
 import datetime
 import copy
 import logging
+logging.StreamHandler(sys.stdout)
+# Integrating Sentry
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,        # Capture info and above as breadcrumbs
+    event_level=logging.ERROR  # Send no events from log messages
+)
+sentry_sdk.init(
+    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
+    integrations=[sentry_logging]
+)
 
 MIN_DIFF = 1.0
 
@@ -18,6 +33,7 @@ def connect2DB():
         return db
     except Exception as e:
         print str(e)
+        logging.error("Unable to connect to database: {0}".format(e))
         return None
 
 
@@ -105,22 +121,34 @@ def handleDifference(before, current, typeR="daily"):
 
 
 def run():
+    logging.info("Executing the Request for retrieval of data on {0}".format(datetime.datetime.now()))
     db = connect2DB()
     if db:
         # Attempt to retrieve Crops Information
         try:
+            logging.info("Attempting to retrieve most recent crop data")
             recsCurrent = fetcher.getMostRecent()
             if recsCurrent:
+                logging.info("Successfully retrieved crop data")
                 handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
                 handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
+            else:
+                logging.debug("Unable to successfully retrieve crop data")
         except Exception as e:
             logging.error(e)
 
         # Attempt to retrieve Fishing Information
         try:
-            fisheries.getMostRecentFish()
+            logging.info("Attempting to retrieve most recent fish data")
+            recsFishes = fisheries.getMostRecentFish()
+            if recsFishes:
+                logging.info("Successfully retrieved fish data")
+            else:
+                logging.debug("Unable to successfully retrieve fish data")
         except Exception as e:
             logging.error(e)
+    else:
+        logging.error("Unable to connect to the database")
 
 
 def daily_converter(rec):
