@@ -16,7 +16,7 @@ Jinja2==2.8
 lazy-object-proxy==1.2.2
 MarkupSafe==0.23
 mccabe==0.6.1
-numpy==1.15.2
+numpy==1.9.2
 packaging==16.8
 pyfcm==1.4.5
 pylint==1.6.5
