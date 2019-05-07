@@ -3,7 +3,7 @@ import pymongo
 import operator
 import datetime
 import copy
-from sklearn import linear_model
+# from sklearn import linear_model
 
 MAX_DIFF = 0.5
 NUM_TRAIN = 0
@@ -15,18 +15,19 @@ def connect2DB():
 		db = client.get_default_database()
 		return db
 	except Exception as e:
-		print e.strerror
+		print((e.strerror))
 		return None
 
 def predict():
-	clf = linear_model.LinearRegression()
-	Y_arr = [4.7, 6.5, 5.5, 7.5]
-	X_arr = [[2011, 1], [2012, 2], [2013, 3], [2014, 4]]
-	clf.fit(X_arr, Y_arr)
-	#print coef
-	#print coef[1]*2 + coef[0]
-	ans = clf.predict([2015, 5])
-	print ans
+	pass
+	# clf = linear_model.LinearRegression()
+	# Y_arr = [4.7, 6.5, 5.5, 7.5]
+	# X_arr = [[2011, 1], [2012, 2], [2013, 3], [2014, 4]]
+	# clf.fit(X_arr, Y_arr)
+	# #print coef
+	# #print coef[1]*2 + coef[0]
+	# ans = clf.predict([2015, 5])
+	# print(ans)
 
 def train(X, Y):
 	NUM_TRAIN = len(X)
@@ -70,6 +71,6 @@ def run(crop):
 	if len(prices) != 0 and len(dates) != 0:
 		clf = train(dates, prices)
 		pred = makePrediction(clf, today.year)
-		print pred
+		print(pred)
 		return round(pred,2)
 	return -1

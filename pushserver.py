@@ -1,8 +1,8 @@
-import fetcher
-import fisheries
+from . import fetcher
+from . import fisheries
 # import fire
 # import predict
-import fcm
+from . import fcm
 from pymongo import MongoClient
 import datetime
 import copy
@@ -17,7 +17,7 @@ def connect2DB():
         db = client.get_default_database()
         return db
     except Exception as e:
-        print str(e)
+        print(str(e))
         return None
 
 
@@ -41,36 +41,36 @@ def formatMessage(curr_rec, prev_rec, msg_type="daily"):
 
 
 def updateGeneralDataSet(curr, prev, typeR="daily"):
-    print "Updating General Dataset"
+    print("Updating General Dataset")
     db = connect2DB()
     if db:
         if typeR == "daily":
             dateRec = db.daily.find().sort("date", -1).limit(1)
-            print "Previous Date: ", dateRec[0]['date'], " Current Date: ", curr['date']
-            print "Current Date " + str(len(curr))
+            print("Previous Date: ", dateRec[0]['date'], " Current Date: ", curr['date'])
+            print("Current Date " + str(len(curr)))
 
             if dateRec[0]['date'] != curr['date']:
                 db.daily.insert(curr)
-                print "from ", dateRec[0]['date'], " to", curr['date']
+                print("from ", dateRec[0]['date'], " to", curr['date'])
         else:  # monthly
             dateRec = db.monthly.find().sort("date", -1).limit(1)
             if dateRec[0]['date'] != curr['date']:
                 db.monthly.insert(curr)
-                print "from ", dateRec[0]['date'], " to ", curr['date']
+                print("from ", dateRec[0]['date'], " to ", curr['date'])
 
 
 def handleDifference(before, current, typeR="daily"):
     db = connect2DB()
     if before is not None and current is not None:
-        print "Before " + before[0]['date'].ctime()
-        print "Current " + current[0]['date'].ctime()
+        print("Before " + before[0]['date'].ctime())
+        print("Current " + current[0]['date'].ctime())
         if before[0]['date'].ctime() != current[0]['date'].ctime():
             for b in before:
                 for c in current:
                     if b['commodity'] == c['commodity']:
                         if typeR == "daily":
                             if abs(b['price'] - c['price']) > MIN_DIFF:
-                                print "price for ", b['commodity'], " changed"
+                                print("price for ", b['commodity'], " changed")
                                 # Add new record to the general dataset
                                 # updateGeneralDataSet(c, b, typeR)
                                 # Send Push notification of change record
@@ -82,7 +82,7 @@ def handleDifference(before, current, typeR="daily"):
                                 idx = name.find("(")
                                 fcm.notify(message, name)
                             else:
-                                print "price for ", b['commodity'], " remained the same"
+                                print("price for ", b['commodity'], " remained the same")
                             # Attempt to predict crops (NB disabled for time being)
                             # pred = predict.run(c['commodity'])
                             # if pred != -1:
@@ -96,13 +96,13 @@ def handleDifference(before, current, typeR="daily"):
                 # fire.sendFire(current)
                 # fire.sendRecent(current)
             if typeR == "monthly":
-                print current
+                print(current)
                 fetcher.storeMostRecentMonthly(db, current)
                 fetcher.storeMonthly(db, current)
         else:
-            print "no new record found"
+            logging.info("no new record found")
     else:
-        print "Doesn't exist"
+        logging.info("Doesn't exist")
 
 
 def run():
@@ -137,14 +137,14 @@ def conversionTesting():
         recs2 = copy.deepcopy(recsD)
         recs2 = list(map(daily_converter, recs2))
 
-        print len(recsD)
-        print recsD[0]['price']
-        print len(recs2)
-        print recs2[0]['price']
+        print(len(recsD))
+        print(recsD[0]['price'])
+        print(len(recs2))
+        print(recs2[0]['price'])
 
         handleDifference(recsD, recs2)
 
 
 if __name__ == "__main__":
-    print "Attempting To Run the server"
+    print("Attempting To Run the server")
     run()

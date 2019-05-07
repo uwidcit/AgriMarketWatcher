@@ -117,7 +117,7 @@ def process_options(options, req):
     if len(options) > 1:  # if more than one dimension added we perform an or operation as opposed to an and
         qry = []
         for key in options.keys():
-            print key
+            print(key)
             qry.append({key: options[key]})  # convert the dictionary to a list of dictionaries
         options = {"$or": qry}  # combine each dictionary in the list to a single dictionary combined with or operator
 
@@ -230,8 +230,8 @@ def daily_dates_list(date=None):
             res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
             return json_util.dumps(res)
 
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
     return json_util.dumps(res)
 

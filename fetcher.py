@@ -8,6 +8,7 @@ import pymongo
 import json
 import time
 import datetime
+import logging
 
 category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
@@ -108,9 +109,10 @@ def traverseWorkbook(url, params={}, workbook_type="daily"):
                     if rowData:
                         values.append(rowData)
         return values
-    except Exception, e:
+    except Exception as e:
         # print "Error in reading workbook at ", url, e
-        print "Error traversing workbook", e
+        print("Error traversing workbook: {0}".format(e))
+        logging.error(e)
         return None
 
 
@@ -124,7 +126,7 @@ def retrieveFile(url, filename):
                 if not chunk: break
                 fp.write(chunk)
         return True
-    except Exception, e:
+    except Exception as e:
         return None
 
 
@@ -133,7 +135,7 @@ def get_url(base_url, year, month, day=None):
               "November", "December"]
 
     if str(month).isdigit():
-        print month
+        print(month)
         mStr = months[int(month) - 1]
     else:
         mStr = month
@@ -159,8 +161,8 @@ def retrieveDaily(base_url, day, month, year):
         month = months.index(month) + 1
 
     url = base_url + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls";
-    print url
-    print "time: " + str(day) + "-" + str(mStr) + "-" + str(year)
+    print(url)
+    print("time: " + str(day) + "-" + str(mStr) + "-" + str(year))
 
     result = traverseWorkbook(url)
     if result:
@@ -190,7 +192,7 @@ def retrieveMonthly(base_url, month, year):
     url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/" + str(mStr) + "%20" + str(
         year) + "%20NWM%20Monthly%20Report.xls"
 
-    print "time: " + str(month) + "-" + str(year)
+    print("time: " + str(month) + "-" + str(year))
 
     # mInt = months.index(month) + 1
     result = traverseWorkbook(url, {}, "monthly")
@@ -262,7 +264,7 @@ def get_processed_sheets(db):
     processed = db.processed.find()
     if not processed:
         return set()
-    return set(map(lambda x: extract_urls_from_json(x), processed))
+    return set([extract_urls_from_json(x) for x in processed])
 
 
 # Logs sheets that have just been processed into the database
@@ -273,9 +275,11 @@ def log_sheet_as_processed(db, sheet):
 def getMostRecent():
     daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
     try:
-        months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-                  "November", "December"]
-        client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+        months = ["January", "February", 
+                    "March", "April", "May", "June", 
+                    "July", "August", "September", "October",
+                    "November", "December"]
+        # client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
 
         day = int(time.strftime("%d"))
         month_num = int(time.strftime("%m"))
@@ -300,7 +304,7 @@ def getMostRecent():
             for month in reversed(months_names):
                 m = retrieveMonthly("", month, year)
                 if m:
-                    print "successfully found monthly prices"
+                    print("successfully found monthly prices")
                     reset_monthly = True
                     break
             if reset_monthly:
@@ -310,21 +314,30 @@ def getMostRecent():
         d = None
         for year in years:
             # for month in reversed(months_names):
-            for day in reversed(range(day + 1)):
+            for day in reversed(list(range(day + 1))):
                 url = get_url(daily_base_url, str(year), str(month_num), str(day))
                 d = retrieveDaily(daily_base_url, str(day), month_num, str(year))
+                print("Day: {0} has a value of {1} and less than 10 is {2}".format(day, type(day), day < 10))
                 if d:
-                    print "Found valid data"
+                    print("Found valid data")
                     reset_daily = True
                     break
-
+                elif day < 10: # To accommodate for the possibility of 01, 02 ... 09 as well
+                    str_day = "0" + str(day)
+                    url = get_url(daily_base_url, str(year), str(month_num), str_day)
+                    d = retrieveDaily(daily_base_url, str_day, month_num, str(year))
+                    if d:
+                        print("Found valid data")
+                        reset_daily = True
+                        break
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
         return {"monthly": m, "daily": d}
 
     except Exception as e:
-        print e
+        logging.error(e)
+        print(e)
     finally:
         pass
     return None
@@ -369,25 +382,28 @@ def runGetAll():
         # If we have a new set of data for the daily information, we insert that into the database
 
         if reset_daily:
-            print "resetting daily"
+            print("resetting daily")
             storeMostRecentDaily(db, most_recent_daily)
 
         # If we have a new set of monthly data, we write that to the database
         if reset_monthly:
-            print "resetting monthly"
+            print("resetting monthly")
             storeMostRecentMonthly(db, most_recent_monthly)
 
         db.drop_collection("monthly")
-        print "Months " + str(len(monthly))
-        print "Stored " + str(storeMonthly(db, monthly))
+        print("Months " + str(len(monthly)))
+        print("Stored " + str(storeMonthly(db, monthly)))
 
         db.drop_collection("daily")
-        print "Daily " + str(len(daily))
-        print "Stored " + str(storeDaily(db, daily))
+        print("Daily " + str(len(daily)))
+        print("Stored " + str(storeDaily(db, daily)))
 
     except Exception as e:
-        print e
+        print(e)
 
-
+if __name__ == "__main__":
+    print("Attempting To Run the server")
+    result = getMostRecent()
+    # print(result)
 # runGetAll() # run and extract the files from the server
 # getMostRecent();

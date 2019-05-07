@@ -7,7 +7,7 @@ def list_files(directory):
 	for file in os.listdir(directory):
 		dirfile = os.path.join(directory, file)
 		if os.path.isfile(dirfile):
-			print file
+			print(file)
 			file_list.append(dirfile)
 
 list_files("./xls")
