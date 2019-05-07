@@ -346,8 +346,8 @@ def monthly_crops(date=None):
         options = process_options(options, request)
         crops = mongo.db.monthly.find(options).sort("date", -1).skip(offset).limit(limit)
         res = process_results(crops)
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
     return json_util.dumps(res, default=json_util.default)
 
@@ -377,8 +377,8 @@ def monthly_crop_category(category=None):
             res = process_results(crops)
         else:
             res = mongo.db.monthly.distinct("category")
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
     return json_util.dumps(res, default=json_util.default)
 
@@ -414,8 +414,8 @@ def monthly_crop_commodity(commodity=None):
             res = process_results(crops)
         else:
             res = mongo.db.monthly.distinct("commodity")
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
     return json_util.dumps(res, default=json_util.default)
 
