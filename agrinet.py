@@ -1,6 +1,6 @@
 from flask import Flask, request, make_response, render_template, current_app
 from flask_autodoc.autodoc import Autodoc
-
+from flask_json import FlaskJSON, JsonError, json_response, as_json
 from pymongo import MongoClient
 from bson import json_util, objectid
 from datetime import datetime, timedelta
@@ -21,6 +21,7 @@ sentry_sdk.init(
 
 
 app = Flask(__name__)
+FlaskJSON(app)
 app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
 auto = Autodoc(app)  # https://github.com/acoomans/flask-autodoc
 
@@ -151,34 +152,41 @@ def about():
 @app.route('/crops')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crops_list():
     """Returns a List of all of the crops (commodities) within the database."""
     crops = mongo.db.daily.distinct("commodity")
-    return json_util.dumps(crops)
+    # return json_util.dumps(crops)
+    return crops
 
 
 @app.route('/crops/categories')  #
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crop_categories():
     """Returns the list of categories to which crops can belong."""
     res = mongo.db.daily.distinct("category")
-    return json_util.dumps(res)
+    # return json_util.dumps(res)
+    return res
 
 
 @app.route('/crops/categories/<category>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crops_by_category(category=None):
     """Returns the list of crops which belong to the specified category."""
     res = mongo.db.daily.find({"category": category.upper()}).distinct("commodity")
-    return json_util.dumps(res)
+    # return json_util.dumps(res)
+    return res
 
 
 # Daily API
 @app.route('/crops/daily')  #
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crops_all_daily():
     """Returns the daily prices of all the crops."""
     options = {}
@@ -193,23 +201,31 @@ def crops_all_daily():
     options = process_options(options, request)
     crops = mongo.db.daily.find(options).sort([("date", -1)]).skip(offset).limit(limit)
     res = process_results(crops)
-    return json_util.dumps(res, default=json_util.default)
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/crops/daily/<cid>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crops_id(cid=None):
     """Returns the daily price for a specific crop identified by its ID."""
-    crops = mongo.db.daily.find({"_id": objectid.ObjectId(cid)})
-    res = process_results(crops)
-    return json_util.dumps(res, default=json_util.default)
+    res = []
+    if cid is not None and cid.isdigit():
+        crops = mongo.db.daily.find({"_id": objectid.ObjectId(cid)})
+        res = process_results(crops)
+        # return json_util.dumps(res, default=json_util.default)
+        return res
+    else:
+        return None, 404
 
 
 @app.route("/crops/daily/dates")  # returns all the daily dates available
 @app.route("/crops/daily/dates/<date>")  # returns the commodities for the date specified
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def daily_dates_list(date=None):
     res = []
     options = {}
@@ -237,31 +253,35 @@ def daily_dates_list(date=None):
             options = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
             dates = mongo.db.daily.find(options).distinct("date")
             res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
-            return json_util.dumps(res)
+            # return json_util.dumps(res)
+            return res
 
     except Exception as e:
         print(e)
-
-    return json_util.dumps(res)
+    # return json_util.dumps(res)
+    return res
 
 
 @app.route('/crops/daily/recent')  # Returns the daily prices of the most recent entry
 @app.route('/crops/daily/recent/<crop>')  # Returns the most recent daily price of the specified comodity
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def most_recent_daily_data(crop=None):
     if crop:
         crops = mongo.db.dailyRecent.find(format_crop_query(crop))  # If we have a crop that we want to obtain
     else:
         crops = mongo.db.dailyRecent.find()  # Else, if we want all crops
     result = process_results(crops)
-    return json_util.dumps(result, default=json_util.default)
+    # return json_util.dumps(result, default=json_util.default)
+    return result
 
 
 @app.route('/crops/daily/category')
 @app.route('/crops/daily/category/<category>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crop_daily_categories(category=None):
     offset = 0
     limit = 100
@@ -279,36 +299,42 @@ def crop_daily_categories(category=None):
     else:
         res = mongo.db.daily.distinct("category")
 
-    return json_util.dumps(res, default=json_util.default)
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/crops/daily/commodity/<commodity>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def crop_daily_commodity(commodity=None):
     res = []
-    if commodity:
+    if commodity is not None and len(commodity) > 1:
         commodity = commodity.lower().split(",")
         qry = []
         for c in commodity:
             qry.append({"commodity": c})
         crops = mongo.db.daily.find({"$or": qry})
         res = process_results(crops)
-
-    return json_util.dumps(res, default=json_util.default)
+    else:
+        print("Commodity was not specified")
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/crops/daily/predict')  # Returns the daily prices of the most recent entry
 @app.route('/crops/daily/predict/<crop>')  # Returns the most recent daily price of the specified comodity
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def prediction_data(crop=None):
     if crop:
         crops = mongo.db.predictions.find({"name": crop})  # If we have a crop that we want to obtain
     else:
         crops = mongo.db.predictions.find()  # Else, if we want all crops
     result = crops
-    return json_util.dumps(result, default=json_util.default)
+    # return json_util.dumps(result, default=json_util.default)
+    return result
 
 
 # Monthly API
@@ -316,19 +342,22 @@ def prediction_data(crop=None):
 @app.route("/crops/monthly/dates")
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def monthly_dates_list():
     end = datetime.now()
     start = end - timedelta(days=300)  # default to 30 days difference
     query = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
     dates = mongo.db.monthly.find(query).distinct("date")
     dates = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
-    return json_util.dumps(dates)
+    # return json_util.dumps(dates)
+    return dates
 
 
 @app.route('/crops/monthly')
 @app.route('/crops/monthly/<date>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def monthly_crops(date=None):
     res = []
     options = {}
@@ -358,13 +387,15 @@ def monthly_crops(date=None):
     except Exception as e:
         print(e)
 
-    return json_util.dumps(res, default=json_util.default)
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/crops/monthly/category/')
 @app.route('/crops/monthly/category/<category>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def monthly_crop_category(category=None):
     res = []
     options = {}
@@ -389,13 +420,15 @@ def monthly_crop_category(category=None):
     except Exception as e:
         print(e)
 
-    return json_util.dumps(res, default=json_util.default)
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/crops/monthly/commodity/')
 @app.route('/crops/monthly/commodity/<commodity>')
 @auto.doc()
 @crossdomain(origin='*')
+@as_json
 def monthly_crop_commodity(commodity=None):
     res = []
     options = {}
@@ -426,7 +459,8 @@ def monthly_crop_commodity(commodity=None):
     except Exception as e:
         print(e)
 
-    return json_util.dumps(res, default=json_util.default)
+    # return json_util.dumps(res, default=json_util.default)
+    return res
 
 
 @app.route('/documentation')
@@ -437,7 +471,8 @@ def documentation():
 @app.route('/api/test/fetch')
 def test_fetcher():
     recs_current = fetcher.getMostRecent()
-    return json_util.dumps(recs_current, default=json_util.default)
+    # return json_util.dumps(recs_current, default=json_util.default)
+    return recs_current
 
 
 if __name__ == "__main__":
