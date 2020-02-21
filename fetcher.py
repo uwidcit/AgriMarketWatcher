@@ -1,5 +1,3 @@
-import urllib
-import urllib2
 import requests
 import xlrd
 from datetime import datetime
@@ -107,7 +105,7 @@ def processRow(sheet, row, type):
 def traverseWorkbook(url, params={}, workbook_type="daily"):
     values = []
     try:
-        data = urllib2.urlopen(url).read()
+        data = requests.get(url).content
         wb = open_workbook(url, file_contents=data)
         for s in wb.sheets():
             for row in range(s.nrows):
@@ -118,21 +116,6 @@ def traverseWorkbook(url, params={}, workbook_type="daily"):
         return values
     except Exception as e:
         logger.error("Error traversing workbook: {0}".format(e))
-        return None
-
-
-def retrieveFile(url, filename):
-    try:
-        req = urllib2.urlopen(url)
-        CHUNK = 16 * 1024
-        with open(filename, 'wb') as fp:
-            while True:
-                chunk = req.read(CHUNK)
-                if not chunk:
-                    break
-                fp.write(chunk)
-        return True
-    except Exception as e:
         return None
 
 
@@ -166,9 +149,6 @@ def check_if_url_is_valid(url):
 
 
 def retrieveDaily(base_url, day, month, year):
-    filename = "daily" + "-" + str(day) + "-" + \
-        str(month) + "-" + str(year) + ".xls"
-
     if str(month).isdigit():
         mStr = months[month - 1]
     else:

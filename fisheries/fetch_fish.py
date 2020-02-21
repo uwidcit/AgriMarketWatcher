@@ -1,6 +1,6 @@
 import json
 import logging
-import urllib2
+import requests
 import xlrd
 import time
 from xlrd import open_workbook
@@ -38,23 +38,13 @@ def get_url(market, year, month, day=None, with_zero=True):
     return base_url + "%20" + market + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
 
 
-def makeHeadRequest(daily_fish_url):
-    try:
-        request = urllib2.Request(daily_fish_url)
-        request.get_method = lambda: 'HEAD'
-        response = urllib2.urlopen(request)
-        return response.info()
-    except Exception as e:
-        logging.error(e)
-        return None
-
 
 def retrieveData(daily_fish_url, market, year, month, day):
     records = []
     # Attempt to retrieve records
     try:
         # retrieve the file and open as a stream of data
-        data = urllib2.urlopen(daily_fish_url).read()
+        data = requests.get(daily_fish_url).content
         wb = open_workbook(daily_fish_url, file_contents=data)
         # For each sheet, check each row for data in specific columns
         for sheet in wb.sheets():

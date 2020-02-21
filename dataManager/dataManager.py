@@ -1,5 +1,5 @@
 # Reference URL: https://jeffknupp.com/blog/2014/06/18/improve-your-python-python-classes-and-object-oriented-programming/
-import urllib2
+import requests
 import httplib2
 import xlrd
 from xlrd import open_workbook
@@ -54,7 +54,7 @@ class DataSource(object):
 	def traverse_workbook(self, url):
 		"""Traverse workbook sheets and extract row data."""
 		values = []
-		data = urllib2.urlopen(url).read()
+		data = requests.get(url).content
 		wb = open_workbook(url, file_contents=data)
 		for sheet in wb.sheets():  # TODO So far only one sheet has data
 			for row in range(sheet.nrows):

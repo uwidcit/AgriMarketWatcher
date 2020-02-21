@@ -27,7 +27,6 @@ requests==2.7.0
 requests-toolbelt==0.8.0
 sentry-sdk==0.14.1
 six==1.10.0
-urllib3==1.10.4
 Werkzeug==0.10.4
 wrapt==1.10.8
 xlrd==0.9.3
