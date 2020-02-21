@@ -9,7 +9,7 @@ import pymongo
 import json
 import time
 import datetime
-import logging
+from log_configuration import logger
 
 category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices",
@@ -114,9 +114,7 @@ def traverseWorkbook(url, params={}, workbook_type="daily"):
                         values.append(rowData)
         return values
     except Exception as e:
-        # print "Error in reading workbook at ", url, e
-        print("Error traversing workbook: {0}".format(e))
-        logging.error(e)
+        logger.error("Error traversing workbook: {0}".format(e))
         return None
 
 
@@ -137,7 +135,6 @@ def retrieveFile(url, filename):
 
 def get_url(base_url, year, month, day=None):
     if str(month).isdigit():
-        print(month)
         mStr = months[int(month) - 1]
     else:
         mStr = month
@@ -258,7 +255,7 @@ def storeMostRecentMonthly(db, dData):
 # To prevent the repeated parsing of xls files, we can store a list of read xls files
 
 
-# Parses the json returned by mongoDB in the format for url logging and returns a set of urls
+# Parses the json returned by mongoDB in the format for url logger and returns a set of urls
 def extract_urls_from_json(j_obj):
     data = json.loads(j_obj)
     return data['url']
@@ -288,7 +285,7 @@ def getMostRecent():
             months_names.extend(months)
         else:
             months_names.extend(months[0: month_num])
-       
+
         year_number = int(time.strftime("%Y"))
         years = [year_number]
         if month_num == 1:
@@ -303,7 +300,7 @@ def getMostRecent():
             for month in reversed(months_names):
                 m = retrieveMonthly("", month, year)
                 if m:
-                    logging.info("successfully found monthly prices")
+                    logger.info("successfully found monthly prices")
                     reset_monthly = True
                     break
             if reset_monthly:
@@ -317,7 +314,7 @@ def getMostRecent():
                 d = retrieveDaily(daily_base_url, str(day),
                                   month_num, str(year))
                 if d:
-                    logging.info("Found valid data")
+                    logger.info("Found valid data")
                     reset_daily = True
                     break
                 elif day < 10:  # To accommodate for the possibility of 01, 02 ... 09 as well
@@ -325,7 +322,7 @@ def getMostRecent():
                     d = retrieveDaily(daily_base_url, str_day,
                                       month_num, str(year))
                     if d:
-                        logging.info("Found valid data")
+                        logger.info("Found valid data")
                         reset_daily = True
                         break
             if reset_daily:
@@ -334,13 +331,11 @@ def getMostRecent():
         return {"monthly": m, "daily": d}
 
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
     finally:
         pass
     return None
 
-
-# print getMostRecent()
 
 def runGetAll():
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
@@ -378,29 +373,26 @@ def runGetAll():
         # If we have a new set of data for the daily information, we insert that into the database
 
         if reset_daily:
-            print("resetting daily")
+            logger.info("resetting daily")
             storeMostRecentDaily(db, most_recent_daily)
 
         # If we have a new set of monthly data, we write that to the database
         if reset_monthly:
-            print("resetting monthly")
+            logger.info("resetting monthly")
             storeMostRecentMonthly(db, most_recent_monthly)
 
         db.drop_collection("monthly")
-        print("Months " + str(len(monthly)))
-        print("Stored " + str(storeMonthly(db, monthly)))
+        logger.info("Months " + str(len(monthly)))
+        logger.info("Stored " + str(storeMonthly(db, monthly)))
 
         db.drop_collection("daily")
-        print("Daily " + str(len(daily)))
-        print("Stored " + str(storeDaily(db, daily)))
+        logger.info("Daily " + str(len(daily)))
+        logger.info("Stored " + str(storeDaily(db, daily)))
 
     except Exception as e:
-        print(e)
+        logger.error(e)
 
 
 if __name__ == "__main__":
-    print("Attempting To Run the server")
     result = getMostRecent()
-    # print(result)
-# runGetAll() # run and extract the files from the server
-# getMostRecent();
+    logger.info(result)

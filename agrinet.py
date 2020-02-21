@@ -7,18 +7,12 @@ from datetime import datetime, timedelta
 import re  # regular expression
 import os
 import fetcher
-
+import sys
 from functools import update_wrapper
 from fisheries import fisheries_file
 
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
-
-sentry_sdk.init(
-    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
-    integrations=[FlaskIntegration()]
-)
-
+import sentry_integration
+from log_configuration import logger
 
 app = Flask(__name__)
 FlaskJSON(app)
@@ -31,8 +25,6 @@ if "ENV" in os.environ:
 else:
     app.debug = True
 
-# mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-# mongo.db = mongo['heroku_app24455461']
 
 from dataManager import mongo
 
@@ -127,7 +119,7 @@ def process_options(options, req):
     if len(options) > 1:  # if more than one dimension added we perform an or operation as opposed to an and
         qry = []
         for key in options.keys():
-            print(key)
+            logger.info(key)
             qry.append({key: options[key]})  # convert the dictionary to a list of dictionaries
         options = {"$or": qry}  # combine each dictionary in the list to a single dictionary combined with or operator
 
@@ -156,7 +148,6 @@ def about():
 def crops_list():
     """Returns a List of all of the crops (commodities) within the database."""
     crops = mongo.db.daily.distinct("commodity")
-    # return json_util.dumps(crops)
     return crops
 
 
@@ -167,7 +158,6 @@ def crops_list():
 def crop_categories():
     """Returns the list of categories to which crops can belong."""
     res = mongo.db.daily.distinct("category")
-    # return json_util.dumps(res)
     return res
 
 
@@ -178,7 +168,6 @@ def crop_categories():
 def crops_by_category(category=None):
     """Returns the list of crops which belong to the specified category."""
     res = mongo.db.daily.find({"category": category.upper()}).distinct("commodity")
-    # return json_util.dumps(res)
     return res
 
 
@@ -201,7 +190,6 @@ def crops_all_daily():
     options = process_options(options, request)
     crops = mongo.db.daily.find(options).sort([("date", -1)]).skip(offset).limit(limit)
     res = process_results(crops)
-    # return json_util.dumps(res, default=json_util.default)
     return res
 
 
@@ -215,7 +203,6 @@ def crops_id(cid=None):
     if cid is not None and cid.isdigit():
         crops = mongo.db.daily.find({"_id": objectid.ObjectId(cid)})
         res = process_results(crops)
-        # return json_util.dumps(res, default=json_util.default)
         return res
     else:
         return None, 404
@@ -253,12 +240,11 @@ def daily_dates_list(date=None):
             options = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
             dates = mongo.db.daily.find(options).distinct("date")
             res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
-            # return json_util.dumps(res)
             return res
 
     except Exception as e:
-        print(e)
-    # return json_util.dumps(res)
+        logger.error(e)
+
     return res
 
 
@@ -273,7 +259,6 @@ def most_recent_daily_data(crop=None):
     else:
         crops = mongo.db.dailyRecent.find()  # Else, if we want all crops
     result = process_results(crops)
-    # return json_util.dumps(result, default=json_util.default)
     return result
 
 
@@ -299,7 +284,6 @@ def crop_daily_categories(category=None):
     else:
         res = mongo.db.daily.distinct("category")
 
-    # return json_util.dumps(res, default=json_util.default)
     return res
 
 
@@ -317,25 +301,8 @@ def crop_daily_commodity(commodity=None):
         crops = mongo.db.daily.find({"$or": qry})
         res = process_results(crops)
     else:
-        print("Commodity was not specified")
-    # return json_util.dumps(res, default=json_util.default)
+        logger.debug("Commodity was not specified")
     return res
-
-
-@app.route('/crops/daily/predict')  # Returns the daily prices of the most recent entry
-@app.route('/crops/daily/predict/<crop>')  # Returns the most recent daily price of the specified comodity
-@auto.doc()
-@crossdomain(origin='*')
-@as_json
-def prediction_data(crop=None):
-    if crop:
-        crops = mongo.db.predictions.find({"name": crop})  # If we have a crop that we want to obtain
-    else:
-        crops = mongo.db.predictions.find()  # Else, if we want all crops
-    result = crops
-    # return json_util.dumps(result, default=json_util.default)
-    return result
-
 
 # Monthly API
 
@@ -349,7 +316,7 @@ def monthly_dates_list():
     query = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
     dates = mongo.db.monthly.find(query).distinct("date")
     dates = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
-    # return json_util.dumps(dates)
+
     return dates
 
 
@@ -385,9 +352,8 @@ def monthly_crops(date=None):
         crops = mongo.db.monthly.find(options).sort("date", -1).skip(offset).limit(limit)
         res = process_results(crops)
     except Exception as e:
-        print(e)
+        logger.error(e)
 
-    # return json_util.dumps(res, default=json_util.default)
     return res
 
 
@@ -418,9 +384,8 @@ def monthly_crop_category(category=None):
         else:
             res = mongo.db.monthly.distinct("category")
     except Exception as e:
-        print(e)
+        logger.error(e)
 
-    # return json_util.dumps(res, default=json_util.default)
     return res
 
 
@@ -457,9 +422,8 @@ def monthly_crop_commodity(commodity=None):
         else:
             res = mongo.db.monthly.distinct("commodity")
     except Exception as e:
-        print(e)
+        logger.error(e)
 
-    # return json_util.dumps(res, default=json_util.default)
     return res
 
 
@@ -471,8 +435,7 @@ def documentation():
 @app.route('/api/test/fetch')
 def test_fetcher():
     recs_current = fetcher.getMostRecent()
-    # return json_util.dumps(recs_current, default=json_util.default)
-    return recs_current
+    return []
 
 
 if __name__ == "__main__":

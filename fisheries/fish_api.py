@@ -69,21 +69,6 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 def fish_list():
     fishes = mongo.db.dailyFishRecent.distinct('commodity')
     return jsonify(fishes)
-    # return json_util.dumps(fishes, indent=4)
-
-
-# @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
-# @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
-# @crossdomain(origin='*')
-# # @auto.doc()
-# def most_recent_daily_fish(fish=None):
-#     if fish:
-#         fishes = mongo.db.dailyFishRecent.find({"commodity": fish})  # If we have a crop that we want to obtain
-#     else:
-#         fishes = mongo.db.dailyFishRecent.find()  # Else, if we want all crops
-#     result = process_results(fishes)
-#     return json_util.dumps(result, default=json_util.default, indent=4)
-
 
 @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
 @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
