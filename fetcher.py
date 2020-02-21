@@ -4,18 +4,21 @@ import requests
 import xlrd
 from datetime import datetime
 from xlrd import open_workbook
-from pymongo import MongoClient
-import pymongo
+
 import json
 import time
 import datetime
 from log_configuration import logger
+from dataManager import connect2DB
 
 category = "ROOT CROPS"
 categories = ["root crops", "condiments and spices",
               "leafy vegetables", "vegetables", "fruits", "citrus"]
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]
+
+base_monthly_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"
+daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
 
 # Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
@@ -150,9 +153,11 @@ def get_url(base_url, year, month, day=None):
             if check_if_url_is_valid(url):
                 return url
     else:
-        url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/" + str(mStr) + "%20" + str(
-            year) + "%20NWM%20Monthly%20Report.xls"
-        return url
+        url = base_url + str(mStr) + "%20" + str(year) + \
+            "%20NWM%20Monthly%20Report.xls"
+        if check_if_url_is_valid(url):
+            return url
+    return None
 
 
 def check_if_url_is_valid(url):
@@ -171,40 +176,47 @@ def retrieveDaily(base_url, day, month, year):
         month = months.index(month) + 1
 
     url = get_url(base_url, year, month, day)
-
-    result = traverseWorkbook(url)
-    if result:
-        # Add the date to each record
-        for x in result:
-            if x:
-                x.update({'date': datetime.datetime(
-                    int(year), int(month), int(day))})
-            else:
-                result.remove(x)
-        return result
+    if url:
+        result = traverseWorkbook(url)
+        if result:
+            # Add the date to each record
+            for x in result:
+                if x:
+                    x.update({'date': datetime.datetime(
+                        int(year), int(month), int(day))})
+                else:
+                    result.remove(x)
+            return result
+        else:
+            logger.error('Unable to extract data from the excel file')
     else:
-        return None
+        logger.debug(
+            'No Daily report found for: {0}-{1}-{2}'.format(day, month, year))
+    return None
 
 
 def retrieveMonthly(base_url, month, year):
-    filename = "monthly " + "-" + str(month) + "-" + str(year) + ".xls"
     if str(month).isdigit():
         mStr = months[month - 1]
     else:
         mStr = month
         month = months.index(month) + 1
 
-    url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/" + str(mStr) + "%20" + str(
-        year) + "%20NWM%20Monthly%20Report.xls"
-
-    result = traverseWorkbook(url, {}, "monthly")
-    if result:
-        for x in result:
-            if x:
-                x.update({"date": datetime.datetime(int(year), int(month), 1)})
-        return result
+    url = get_url(base_url, year, month)
+    if url:
+        result = traverseWorkbook(url, {}, "monthly")
+        if result:
+            for x in result:
+                if x:
+                    x.update({"date": datetime.datetime(
+                        int(year), int(month), 1)})
+            return result
+        else:
+            logger.error('Unable to extract data from the excel file')
     else:
-        return None
+        logger.debug(
+            'No Monthly report found for: {0}-{1}'.format(month, year))
+    return None
 
 
 def storeMonthly(db, mData):
@@ -275,7 +287,6 @@ def log_sheet_as_processed(db, sheet):
 
 
 def getMostRecent():
-    daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
     try:
         day = int(time.strftime("%d"))
         month_num = int(time.strftime("%m"))
@@ -298,9 +309,10 @@ def getMostRecent():
         m = None
         for year in years:
             for month in reversed(months_names):
-                m = retrieveMonthly("", month, year)
+                m = retrieveMonthly(base_monthly_url, month, year)
                 if m:
-                    logger.info("successfully found monthly prices")
+                    logger.info(
+                        "successfully found {0} monthly prices for {1}-{2}".format(len(m), month, year))
                     reset_monthly = True
                     break
             if reset_monthly:
@@ -314,7 +326,8 @@ def getMostRecent():
                 d = retrieveDaily(daily_base_url, str(day),
                                   month_num, str(year))
                 if d:
-                    logger.info("Found valid data")
+                    logger.info(
+                        "Found {0} records for day {1}-{2}-{3}".format(len(d), day, month_num, year))
                     reset_daily = True
                     break
                 elif day < 10:  # To accommodate for the possibility of 01, 02 ... 09 as well
@@ -322,7 +335,8 @@ def getMostRecent():
                     d = retrieveDaily(daily_base_url, str_day,
                                       month_num, str(year))
                     if d:
-                        logger.info("Found valid data")
+                        logger.info(
+                            "Found {0} records for day {1}-{2}-{3}".format(len(d), day, month_num, year))
                         reset_daily = True
                         break
             if reset_daily:
@@ -337,8 +351,7 @@ def getMostRecent():
     return None
 
 
-def runGetAll():
-    base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
+def runGetAll(store_data=True):
 
     most_recent_daily = None
     most_recent_monthly = None
@@ -347,11 +360,12 @@ def runGetAll():
     reset_daily = False
     reset_monthly = False
 
-    for year in range(2017, 2019):
+    for year in range(2017, 2020):  # TODO Update to not have to set date
         for month in months:
 
             # extract monthly reports
-            m = retrieveMonthly(base_url, month, str(year))
+
+            m = retrieveMonthly(base_monthly_url, month, str(year))
             if m:
                 reset_monthly = True
                 monthly.extend(m)
@@ -359,38 +373,37 @@ def runGetAll():
 
             # extract daily reports
             for day in range(1, 32):
-                d = retrieveDaily(base_url, str(day), month, str(year))
+                d = retrieveDaily(daily_base_url, str(day), month, str(year))
                 if d:
                     reset_daily = True
                     daily.extend(d)
                     most_recent_daily = d
-    try:
-        # Connect to the Database
-        client = MongoClient(
-            "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-        db = client.get_default_database()
 
-        # If we have a new set of data for the daily information, we insert that into the database
+    if store_data:
+        try:
+            # Connect to the Database
+            db = connect2DB()
 
-        if reset_daily:
-            logger.info("resetting daily")
-            storeMostRecentDaily(db, most_recent_daily)
+            # If we have a new set of data for the daily information, we insert that into the database
 
-        # If we have a new set of monthly data, we write that to the database
-        if reset_monthly:
-            logger.info("resetting monthly")
-            storeMostRecentMonthly(db, most_recent_monthly)
+            if reset_daily:
+                logger.info("resetting daily")
+                storeMostRecentDaily(db, most_recent_daily)
 
-        db.drop_collection("monthly")
-        logger.info("Months " + str(len(monthly)))
-        logger.info("Stored " + str(storeMonthly(db, monthly)))
+            # If we have a new set of monthly data, we write that to the database
+            if reset_monthly:
+                logger.info("resetting monthly")
+                storeMostRecentMonthly(db, most_recent_monthly)
 
-        db.drop_collection("daily")
-        logger.info("Daily " + str(len(daily)))
-        logger.info("Stored " + str(storeDaily(db, daily)))
+        except Exception as e:
+            logger.error(e)
 
-    except Exception as e:
-        logger.error(e)
+    return {
+        'monthly': monthly,
+        'daily': daily,
+        'most_recent_monthly': most_recent_monthly,
+        'most_recent_daily': most_recent_daily
+    }
 
 
 if __name__ == "__main__":
