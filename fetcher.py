@@ -1,5 +1,6 @@
 import urllib
 import urllib2
+import requests
 import xlrd
 from datetime import datetime
 from xlrd import open_workbook
@@ -11,8 +12,10 @@ import datetime
 import logging
 
 category = "ROOT CROPS"
-categories = ["root crops", "condiments and spices", "leafy vegetables", "vegetables", "fruits", "citrus"]
-
+categories = ["root crops", "condiments and spices",
+              "leafy vegetables", "vegetables", "fruits", "citrus"]
+months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December"]
 
 # Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
@@ -20,6 +23,8 @@ categories = ["root crops", "condiments and spices", "leafy vegetables", "vegeta
 # @param category : the category of the crop the be considered
 # @return : a dictionary representing the data at the specified row
 #           for a particular sheet
+
+
 def processDaily(sheet, row, category):
     dic = {
         'commodity': sheet.cell_value(row, 0).encode('ascii').lower(),
@@ -99,7 +104,6 @@ def processRow(sheet, row, type):
 def traverseWorkbook(url, params={}, workbook_type="daily"):
     values = []
     try:
-        # print "Trying to read ", url
         data = urllib2.urlopen(url).read()
         wb = open_workbook(url, file_contents=data)
         for s in wb.sheets():
@@ -123,7 +127,8 @@ def retrieveFile(url, filename):
         with open(filename, 'wb') as fp:
             while True:
                 chunk = req.read(CHUNK)
-                if not chunk: break
+                if not chunk:
+                    break
                 fp.write(chunk)
         return True
     except Exception as e:
@@ -131,9 +136,6 @@ def retrieveFile(url, filename):
 
 
 def get_url(base_url, year, month, day=None):
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-              "November", "December"]
-
     if str(month).isdigit():
         print(month)
         mStr = months[int(month) - 1]
@@ -142,17 +144,28 @@ def get_url(base_url, year, month, day=None):
         months.index(month) + 1
 
     if day:
-        return base_url + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
+        possible_urls = [
+            base_url + "%20" + str(day) + "%20" + mStr +
+            "%20" + str(year) + ".xls",
+            base_url + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
+        ]
+        for url in possible_urls:
+            if check_if_url_is_valid(url):
+                return url
     else:
         url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/" + str(mStr) + "%20" + str(
             year) + "%20NWM%20Monthly%20Report.xls"
         return url
 
 
+def check_if_url_is_valid(url):
+    status = requests.head(url).status_code
+    return status == 200 or status == 304
+
+
 def retrieveDaily(base_url, day, month, year):
-    filename = "daily" + "-" + str(day) + "-" + str(month) + "-" + str(year) + ".xls"
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-              "November", "December"]
+    filename = "daily" + "-" + str(day) + "-" + \
+        str(month) + "-" + str(year) + ".xls"
 
     if str(month).isdigit():
         mStr = months[month - 1]
@@ -160,17 +173,15 @@ def retrieveDaily(base_url, day, month, year):
         mStr = month
         month = months.index(month) + 1
 
-    url = base_url + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls";
-    print(url)
-    print("time: " + str(day) + "-" + str(mStr) + "-" + str(year))
+    url = get_url(base_url, year, month, day)
 
     result = traverseWorkbook(url)
     if result:
         # Add the date to each record
         for x in result:
             if x:
-                # print x
-                x.update({'date': datetime.datetime(int(year), int(month), int(day))})
+                x.update({'date': datetime.datetime(
+                    int(year), int(month), int(day))})
             else:
                 result.remove(x)
         return result
@@ -180,9 +191,6 @@ def retrieveDaily(base_url, day, month, year):
 
 def retrieveMonthly(base_url, month, year):
     filename = "monthly " + "-" + str(month) + "-" + str(year) + ".xls"
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-              "November", "December"]
-
     if str(month).isdigit():
         mStr = months[month - 1]
     else:
@@ -192,9 +200,6 @@ def retrieveMonthly(base_url, month, year):
     url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/" + str(mStr) + "%20" + str(
         year) + "%20NWM%20Monthly%20Report.xls"
 
-    print("time: " + str(month) + "-" + str(year))
-
-    # mInt = months.index(month) + 1
     result = traverseWorkbook(url, {}, "monthly")
     if result:
         for x in result:
@@ -275,12 +280,6 @@ def log_sheet_as_processed(db, sheet):
 def getMostRecent():
     daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
     try:
-        months = ["January", "February", 
-                    "March", "April", "May", "June", 
-                    "July", "August", "September", "October",
-                    "November", "December"]
-        # client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-
         day = int(time.strftime("%d"))
         month_num = int(time.strftime("%m"))
         months_names = []
@@ -289,7 +288,7 @@ def getMostRecent():
             months_names.extend(months)
         else:
             months_names.extend(months[0: month_num])
-        # Calculate the years needed (TODO fix to more than one year)
+       
         year_number = int(time.strftime("%Y"))
         years = [year_number]
         if month_num == 1:
@@ -304,7 +303,7 @@ def getMostRecent():
             for month in reversed(months_names):
                 m = retrieveMonthly("", month, year)
                 if m:
-                    print("successfully found monthly prices")
+                    logging.info("successfully found monthly prices")
                     reset_monthly = True
                     break
             if reset_monthly:
@@ -315,19 +314,18 @@ def getMostRecent():
         for year in years:
             # for month in reversed(months_names):
             for day in reversed(list(range(day + 1))):
-                url = get_url(daily_base_url, str(year), str(month_num), str(day))
-                d = retrieveDaily(daily_base_url, str(day), month_num, str(year))
-                print("Day: {0} has a value of {1} and less than 10 is {2}".format(day, type(day), day < 10))
+                d = retrieveDaily(daily_base_url, str(day),
+                                  month_num, str(year))
                 if d:
-                    print("Found valid data")
+                    logging.info("Found valid data")
                     reset_daily = True
                     break
-                elif day < 10: # To accommodate for the possibility of 01, 02 ... 09 as well
+                elif day < 10:  # To accommodate for the possibility of 01, 02 ... 09 as well
                     str_day = "0" + str(day)
-                    url = get_url(daily_base_url, str(year), str(month_num), str_day)
-                    d = retrieveDaily(daily_base_url, str_day, month_num, str(year))
+                    d = retrieveDaily(daily_base_url, str_day,
+                                      month_num, str(year))
                     if d:
-                        print("Found valid data")
+                        logging.info("Found valid data")
                         reset_daily = True
                         break
             if reset_daily:
@@ -337,7 +335,6 @@ def getMostRecent():
 
     except Exception as e:
         logging.error(e)
-        print(e)
     finally:
         pass
     return None
@@ -346,8 +343,6 @@ def getMostRecent():
 # print getMostRecent()
 
 def runGetAll():
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-              "November", "December"]
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
 
     most_recent_daily = None
@@ -376,7 +371,8 @@ def runGetAll():
                     most_recent_daily = d
     try:
         # Connect to the Database
-        client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
+        client = MongoClient(
+            "mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
         db = client.get_default_database()
 
         # If we have a new set of data for the daily information, we insert that into the database
@@ -400,6 +396,7 @@ def runGetAll():
 
     except Exception as e:
         print(e)
+
 
 if __name__ == "__main__":
     print("Attempting To Run the server")

@@ -99,12 +99,6 @@ def handleDifference(before, current, typeR="daily"):
                                 fcm.notify(message, name)
                             else:
                                 print("price for ", b['commodity'], " remained the same")
-                            # Attempt to predict crops (NB disabled for time being)
-                            # pred = predict.run(c['commodity'])
-                            # if pred != -1:
-                            #     newRec = {"name" : c['commodity'], "price" : pred}
-                            #     db.predictions.insert(newRec)
-                            # breaktypeR
 
             if typeR == "daily":
                 fetcher.storeMostRecentDaily(db, current)
@@ -131,8 +125,8 @@ def run():
             recsCurrent = fetcher.getMostRecent()
             if recsCurrent:
                 logging.info("Successfully retrieved crop data")
-                handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
-                handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
+                # handleDifference(list(db.recentMonthly.find()), recsCurrent['monthly'], "monthly")
+                # handleDifference(list(db.dailyRecent.find()), recsCurrent['daily'], "daily")
             else:
                 logging.debug("Unable to successfully retrieve crop data")
         except Exception as e:
