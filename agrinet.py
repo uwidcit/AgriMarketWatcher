@@ -1,5 +1,4 @@
 from flask import Flask, request, make_response, render_template, current_app
-from flask_autodoc.autodoc import Autodoc
 from flask_json import FlaskJSON, JsonError, json_response, as_json
 from pymongo import MongoClient
 from bson import json_util, objectid
@@ -17,7 +16,6 @@ from log_configuration import logger
 app = Flask(__name__)
 FlaskJSON(app)
 app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
-auto = Autodoc(app)  # https://github.com/acoomans/flask-autodoc
 
 # Detect If Running in Development mode or on server
 if "ENV" in os.environ:
@@ -142,7 +140,6 @@ def about():
 # Meta API
 # Returns the list of crops available
 @app.route('/crops')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crops_list():
@@ -152,7 +149,6 @@ def crops_list():
 
 
 @app.route('/crops/categories')  #
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crop_categories():
@@ -162,7 +158,6 @@ def crop_categories():
 
 
 @app.route('/crops/categories/<category>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crops_by_category(category=None):
@@ -173,7 +168,6 @@ def crops_by_category(category=None):
 
 # Daily API
 @app.route('/crops/daily')  #
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crops_all_daily():
@@ -194,7 +188,6 @@ def crops_all_daily():
 
 
 @app.route('/crops/daily/<cid>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crops_id(cid=None):
@@ -210,7 +203,6 @@ def crops_id(cid=None):
 
 @app.route("/crops/daily/dates")  # returns all the daily dates available
 @app.route("/crops/daily/dates/<date>")  # returns the commodities for the date specified
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def daily_dates_list(date=None):
@@ -250,7 +242,6 @@ def daily_dates_list(date=None):
 
 @app.route('/crops/daily/recent')  # Returns the daily prices of the most recent entry
 @app.route('/crops/daily/recent/<crop>')  # Returns the most recent daily price of the specified comodity
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def most_recent_daily_data(crop=None):
@@ -264,7 +255,6 @@ def most_recent_daily_data(crop=None):
 
 @app.route('/crops/daily/category')
 @app.route('/crops/daily/category/<category>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crop_daily_categories(category=None):
@@ -288,7 +278,6 @@ def crop_daily_categories(category=None):
 
 
 @app.route('/crops/daily/commodity/<commodity>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def crop_daily_commodity(commodity=None):
@@ -307,7 +296,6 @@ def crop_daily_commodity(commodity=None):
 # Monthly API
 
 @app.route("/crops/monthly/dates")
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def monthly_dates_list():
@@ -322,7 +310,6 @@ def monthly_dates_list():
 
 @app.route('/crops/monthly')
 @app.route('/crops/monthly/<date>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def monthly_crops(date=None):
@@ -359,7 +346,6 @@ def monthly_crops(date=None):
 
 @app.route('/crops/monthly/category/')
 @app.route('/crops/monthly/category/<category>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def monthly_crop_category(category=None):
@@ -391,7 +377,6 @@ def monthly_crop_category(category=None):
 
 @app.route('/crops/monthly/commodity/')
 @app.route('/crops/monthly/commodity/<commodity>')
-@auto.doc()
 @crossdomain(origin='*')
 @as_json
 def monthly_crop_commodity(commodity=None):
@@ -425,18 +410,6 @@ def monthly_crop_commodity(commodity=None):
         logger.error(e)
 
     return res
-
-
-@app.route('/documentation')
-def documentation():
-    return auto.html()
-
-
-@app.route('/api/test/fetch')
-def test_fetcher():
-    recs_current = fetcher.getMostRecent()
-    return []
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

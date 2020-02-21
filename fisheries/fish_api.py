@@ -73,7 +73,6 @@ def fish_list():
 @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
 @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
 @crossdomain(origin='*')
-# @auto.doc()
 def most_recent_daily_fish_merged(fish=None):
     if fish:
         fishes = mongo.db.dailyFishRecent.find({"commodity": fish})  # If we have a crop that we want to obtain
@@ -91,7 +90,6 @@ def most_recent_daily_fish_merged(fish=None):
 
 @fisheries_file.route('/fishes/markets')
 @crossdomain(origin='*')
-# @auto.doc()
 def market_list():
     markets = [{
         'name': 'Port of Spain Fish Market',
@@ -105,7 +103,6 @@ def market_list():
 
 @fisheries_file.route('/fishes/daily/recent/market/<market>')
 @crossdomain(origin='*')
-# @auto.doc()
 def most_recent_daily_fish_by_market(market):
     fishes = mongo.db.dailyFishRecent.find({"market": market})
     result = process_results(fishes)

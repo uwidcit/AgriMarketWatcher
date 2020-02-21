@@ -121,7 +121,7 @@ class DataSource(object):
 										'month': month,
 										'day': day
 									})
-						except Exception, e:
+						except Exception as e:
 							pass
 			
 			# Store the data retrieved in a cache
