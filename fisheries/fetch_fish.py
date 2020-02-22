@@ -1,11 +1,15 @@
 import json
-import logging
 import requests
 import xlrd
 import time
 from xlrd import open_workbook
 from pymongo import MongoClient
 import datetime
+
+
+import sentry_integration
+from log_configuration import logger
+from dataManager import connect2DB
 
 months = ["January", "February",
           "March", "April", "May",
@@ -16,15 +20,10 @@ months = ["January", "February",
 markets = ['POSWFM', 'OVWFM']
 
 
-def getCurrentDB():
-    try:
-        client = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:43057/heroku_app24455461")
-        db = client.get_default_database()
-        return db
-    except Exception as e:
-        logging.error(e)
-    return None
 
+def check_if_url_is_valid(url):
+    status = requests.head(url).status_code
+    return status == 200 or status == 304
 
 def get_url(market, year, month, day=None, with_zero=True):
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Daily"
@@ -71,7 +70,7 @@ def retrieveData(daily_fish_url, market, year, month, day):
                         # Add row record to the collection
                         records.append(cols)
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
 
     return records
 
@@ -89,13 +88,12 @@ def getMostRecentFishByMarket(market):
             for day in reversed(range(day + 1)):
                 for wz in with_zeros:
                     daily_fish_url = get_url(market, year, month_num, day, wz)
-                    logging.info("Attempting to retrieve information for: {0}-{1}-{2}".format(day, month_num, year))
-                    print("Attempting to retrieve information for: {0}-{1}-{2}".format(day, month_num, year))
-                    if makeHeadRequest(daily_fish_url):
+                    logger.info("Attempting to retrieve information for: {0}-{1}-{2}".format(day, month_num, year))
+                    if check_if_url_is_valid(daily_fish_url):
                         recs = retrieveData(daily_fish_url, market, year, month_num, day)
                         return recs  # Fetch the latest value and terminate
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         return []
 
 
@@ -103,16 +101,16 @@ def saveMostRecentFish(records):
     # Attempt to save the retrieved records to the database
     try:
         if len(records) > 0:
-            logging.info("Retrieve {0} fishing records for today".format(len(records)))
-            db = getCurrentDB()
+            logger.info("Retrieve {0} fishing records for today".format(len(records)))
+            db = connect2DB()
             # Store most recent daily
             db.drop_collection("dailyFishRecent")  # drop as we only need current readings
             db.dailyFishRecent.insert(records)  # Insert recent fish records
             # db.dailyFish.insert(records)  # Insert to the collection of fish records (TODO disabled until we do a better job of handling repeats)
             return True
     except Exception as e:
-        logging.error(e)
-        return None
+        logger.error(e)
+    return None
 
 
 def getMostRecentFish():
@@ -120,7 +118,7 @@ def getMostRecentFish():
     for market in markets:
         records = records + getMostRecentFishByMarket(market)
     if saveMostRecentFish(records):
-        print("{0} fish price records saved successfully".format(len(records)))
+        logger.info("{0} fish price records saved successfully".format(len(records)))
     return records
 
 
@@ -131,11 +129,11 @@ def evalURLGens():
     market = markets[1]  # Check different markets
     wz = False  # check different strategy for generating digits in url
     daily_fish_url = get_url(market, year, month_num, day, wz)
-    print(makeHeadRequest(daily_fish_url))
+    logger.info(check_if_url_is_valid(daily_fish_url))
 
 
 if __name__ == "__main__":
-    print("Attempting to the test retrieving the fish information")
-    # print(json.dumps(getMostRecentFish(), indent=4)) # datetime is not serializable
-    print(getMostRecentFish())
+    logger.info("Attempting to the test retrieving the fish information")
+    # logger.info(json.dumps(getMostRecentFish(), indent=4)) # datetime is not serializable
+    logger.info(getMostRecentFish())
     # evalURLGens()

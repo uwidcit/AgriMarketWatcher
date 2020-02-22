@@ -39,18 +39,17 @@ def updateGeneralDataSet(curr, prev, typeR="daily"):
     if db:
         if typeR == "daily":
             dateRec = db.daily.find().sort("date", -1).limit(1)
-            logger.info("Previous Date: ",
-                        dateRec[0]['date'], " Current Date: ", curr['date'])
+            logger.info("Previous Date: {0} Current Date: {1}".format(dateRec[0]['date'], curr['date']))
             logger.info("Current Date " + str(len(curr)))
 
             if dateRec[0]['date'] != curr['date']:
                 db.daily.insert(curr)
-                logger.info("from ", dateRec[0]['date'], " to", curr['date'])
+                logger.info("from {0} to {1}".format(dateRec[0]['date'], curr['date']))
         else:  # monthly
             dateRec = db.monthly.find().sort("date", -1).limit(1)
             if dateRec[0]['date'] != curr['date']:
                 db.monthly.insert(curr)
-                logger.info("from ", dateRec[0]['date'], " to ", curr['date'])
+                logger.info("from {0} to {1}".format(dateRec[0]['date'], curr['date']))
 
 
 def handleDifference(before, current, typeR="daily"):
@@ -64,23 +63,22 @@ def handleDifference(before, current, typeR="daily"):
                     for c in current:
                         if b['commodity'] == c['commodity']:
                             if typeR == "daily":
-                                if abs(b['price'] - c['price']) > MIN_DIFF:
-                                    logger.info("price for ",
-                                                b['commodity'], " changed")
-                                    # Add new record to the general dataset
-                                    # updateGeneralDataSet(c, b, typeR)
-                                    # Send Push notification of change record
-                                    change = "increased"
-                                    if b['price'] >= c['price']:
-                                        change = "decreased"
-                                    message = c['commodity'] + " has " + change + \
-                                        " to $" + str(c['price']) + \
-                                        " per " + c['unit']
-                                    name = b['commodity'].replace(" ", "")
-                                    fcm.notify(message, name)
-                                else:
-                                    logger.info("price for ",
-                                                b['commodity'], " remained the same")
+                                if c['price'] > 0:
+                                    if abs(b['price'] - c['price']) > MIN_DIFF:
+                                        logger.info("price for {0} changed".format(b['commodity']))
+                                        # Add new record to the general dataset
+                                        # updateGeneralDataSet(c, b, typeR)
+                                        # Send Push notification of change record
+                                        change = "increased"
+                                        if b['price'] >= c['price']:
+                                            change = "decreased"
+                                        message = c['commodity'] + " has " + change + \
+                                            " to $" + str(c['price']) + \
+                                            " per " + c['unit']
+                                        name = b['commodity'].replace(" ", "")
+                                        fcm.notify(message, name)
+                                    else:
+                                        logger.info("price for {0} remained the same".format(b['commodity']))
 
                 if typeR == "daily":
                     fetcher.storeMostRecentDaily(db, current)

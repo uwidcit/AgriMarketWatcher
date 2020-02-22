@@ -5,4 +5,4 @@ mongo = MongoClient("mongodb://agriapp:simplePassword@ds043057.mongolab.com:4305
 mongo.db = mongo['heroku_app24455461']
 
 def connect2DB():
-    return mongo
+    return mongo.db
