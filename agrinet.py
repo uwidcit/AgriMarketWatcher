@@ -1,73 +1,27 @@
-from flask import Flask, request, make_response, render_template, current_app
-from flask_json import FlaskJSON, JsonError, json_response, as_json
-from pymongo import MongoClient
-from bson import json_util, objectid
-from datetime import datetime, timedelta
-import re  # regular expression
 import os
-import fetcher
-import sys
-from functools import update_wrapper
-from fisheries import fisheries_file
+import re  # regular expression
+from datetime import datetime, timedelta
 
-import sentry_integration
+from flask import Flask, request, render_template
+from flask_json import FlaskJSON, as_json
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func, desc
+
+from app_util import crossdomain
+from fisheries import fisheries_file
 from log_configuration import logger
 
 app = Flask(__name__)
 FlaskJSON(app)
+
+SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///agrimarketwatcher.db')
+app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db = SQLAlchemy(app)
+
 app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
-
 # Detect If Running in Development mode or on server
-if "ENV" in os.environ:
-    app.debug = False
-else:
-    app.debug = True
-
-
-from dataManager import mongo
-
-
-def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            h['Access-Control-Allow-Credentials'] = 'true'
-            h['Access-Control-Allow-Headers'] = \
-                "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-
-    return decorator
+app.debug = False if "ENV" in os.environ else True
 
 
 # Helper/Utility functions
@@ -78,50 +32,26 @@ def convert_compatible_json(crop):
     return crop
 
 
-def process_results(cursor):
-    res = []
-    for c in cursor:  # Iterates through each result from the mongodb result cursor
-        res.append(convert_compatible_json(c))  # Pushes (appends) result to a list of results
-    return res
+def process_results(query_results):
+    return [rec.as_dict() for rec in query_results]
 
 
-def format_crop_query(crop):
-    return {"commodity": crop}
-
-
-def format_category_query(category):
-    qry = []
-    category = category.upper().split(",")
-    for c in category:
-        qry.append({"category": re.compile(c, re.IGNORECASE)})
-
-    res = {"$or": qry} if (len(qry) > 1) else qry[0]  # http://en.wikipedia.org/wiki/Conditional_operator#Python
-    return res
-
-
-def process_options(options, req):
+def process_query(target_class, query, req):
     if len(req.args) > 0:
         # convert to case insensitive search for crop name
         if req.args.get("crop"):
-            options['commodity'] = re.compile(str(req.args.get("crop")), re.IGNORECASE)
-        if req.args.get("commodity"):
-            options['commodity'] = re.compile(str(req.args.get("commodity")), re.IGNORECASE)
-        if req.args.get("category"):
-            options.update(format_category_query(req.args.get("category")))
-        if req.args.get("date"):
+            query = query.filter(func.lower(target_class.commodity) == func.lower(str(req.args.get('crop'))))
+        elif req.args.get("commodity"):
+            query = query.filter(func.lower(target_class.commodity) == func.lower(str(req.args.get('commodity'))))
+        elif req.args.get("category"):
+            query = query.filter(func.lower(target_class.category) == func.lower(str(req.args.get('category'))))
+        elif req.args.get("date"):
             try:  # check if the date is either in one of the two supported formats
-                options['date'] = datetime.strptime(str(req.args.get('date')), '%Y-%m-%dT%H:%M:%S')
+                query_date = datetime.strptime(str(req.args.get('date')), '%Y-%m-%dT%H:%M:%S')
             except ValueError:
-                options['date'] = datetime.strptime(str(req.args.get('date')), '%Y-%m-%d')
-
-    if len(options) > 1:  # if more than one dimension added we perform an or operation as opposed to an and
-        qry = []
-        for key in options.keys():
-            logger.info(key)
-            qry.append({key: options[key]})  # convert the dictionary to a list of dictionaries
-        options = {"$or": qry}  # combine each dictionary in the list to a single dictionary combined with or operator
-
-    return options
+                query_date = datetime.strptime(str(req.args.get('date')), '%Y-%m-%d')
+            query = query.filter(func.DATE(target_class.date) == query_date)
+    return query
 
 
 # Display Pages
@@ -144,8 +74,8 @@ def about():
 @as_json
 def crops_list():
     """Returns a List of all of the crops (commodities) within the database."""
-    crops = mongo.db.daily.distinct("commodity")
-    return crops
+    from models import get_distinct_commodity
+    return get_distinct_commodity()
 
 
 @app.route('/crops/categories')  #
@@ -153,8 +83,8 @@ def crops_list():
 @as_json
 def crop_categories():
     """Returns the list of categories to which crops can belong."""
-    res = mongo.db.daily.distinct("category")
-    return res
+    from models import get_distinct_categories
+    return get_distinct_categories()
 
 
 @app.route('/crops/categories/<category>')
@@ -162,8 +92,8 @@ def crop_categories():
 @as_json
 def crops_by_category(category=None):
     """Returns the list of crops which belong to the specified category."""
-    res = mongo.db.daily.find({"category": category.upper()}).distinct("commodity")
-    return res
+    from models import get_distinct_commodity_by_category
+    return get_distinct_commodity_by_category(category.upper())
 
 
 # Daily API
@@ -172,19 +102,16 @@ def crops_by_category(category=None):
 @as_json
 def crops_all_daily():
     """Returns the daily prices of all the crops."""
-    options = {}
-    offset = 0
-    limit = 100
-    if len(request.args) > 0:
-        if request.args.get("limit"):  # Check limit to determine how much records to return
-            limit = int(request.args.get("limit"))
-        if request.args.get("offset"):  # Check offset to determine which record to start from
-            offset = int(request.args.get("offset"))
+    from models import DailyCrops
 
-    options = process_options(options, request)
-    crops = mongo.db.daily.find(options).sort([("date", -1)]).skip(offset).limit(limit)
-    res = process_results(crops)
-    return res
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
+
+    query = db.session.query(DailyCrops)
+    query = process_query(DailyCrops, query, request)
+
+    query_results = query.limit(limit).offset(offset).all()
+    return process_results(query_results)
 
 
 @app.route('/crops/daily/<cid>')
@@ -192,11 +119,9 @@ def crops_all_daily():
 @as_json
 def crops_id(cid=None):
     """Returns the daily price for a specific crop identified by its ID."""
-    res = []
     if cid is not None and cid.isdigit():
-        crops = mongo.db.daily.find({"_id": objectid.ObjectId(cid)})
-        res = process_results(crops)
-        return res
+        from models import get_daily_by_id
+        return get_daily_by_id(cid).as_dict()
     else:
         return None, 404
 
@@ -206,34 +131,33 @@ def crops_id(cid=None):
 @crossdomain(origin='*')
 @as_json
 def daily_dates_list(date=None):
+    """returns all the daily dates available or returns the commodities for the date specified"""
+    from models import DailyCrops
     res = []
-    options = {}
-    offset = 0
-    limit = 100
+
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
+
     try:
         if date:
+            query = db.session.query(DailyCrops)
+
             try:  # check if the date is either in one of the two supported formats
-                options['date'] = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
+                query_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
             except ValueError:
-                options['date'] = datetime.strptime(date, '%Y-%m-%d')
+                query_date = datetime.strptime(date, '%Y-%m-%d')
 
-            if len(request.args) > 0:
-                if request.args.get("limit"):  # Check limit to determine how much records to return
-                    limit = int(request.args.get("limit"))
-                if request.args.get("offset"):  # Check offset to determine which record to start from
-                    offset = int(request.args.get("offset"))
+            query = query.filter(func.DATE(DailyCrops.date) == date)
+            query = process_query(DailyCrops, query, request)
 
-            options = process_options(options, request)
-            crops = mongo.db.daily.find(options).sort("date", -1).skip(offset).limit(limit)
-            res = process_results(crops)
+            query_results = query.limit(limit).offset(offset).all()
+            return process_results(query_results)
         else:
-            end = datetime.now()
-            start = end - timedelta(days=300)  # default to 30 days difference
-            options = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
-            dates = mongo.db.daily.find(options).distinct("date")
-            res = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
-            return res
-
+            records = db.session \
+                .query(DailyCrops.date).distinct() \
+                .order_by(desc(DailyCrops.date)) \
+                .limit(limit).offset(offset).all()
+            res = [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
     except Exception as e:
         logger.error(e)
 
@@ -241,39 +165,39 @@ def daily_dates_list(date=None):
 
 
 @app.route('/crops/daily/recent')  # Returns the daily prices of the most recent entry
-@app.route('/crops/daily/recent/<crop>')  # Returns the most recent daily price of the specified comodity
+@app.route('/crops/daily/recent/<crop>')  # Returns the most recent daily price of the specified commodity
 @crossdomain(origin='*')
 @as_json
 def most_recent_daily_data(crop=None):
-    if crop:
-        crops = mongo.db.dailyRecent.find(format_crop_query(crop))  # If we have a crop that we want to obtain
+    """Returns the daily prices of the most recent entry or the most recent daily price of the specified commodity."""
+    from models import get_most_recent_daily, get_daily_recent_by_commodity
+    if crop:  # If we have a crop that we want to obtain
+        res = get_daily_recent_by_commodity(crop)  #TODO - fails unique constraint
+        if not res:
+            return None, 404
+        crops = [res]
     else:
-        crops = mongo.db.dailyRecent.find()  # Else, if we want all crops
-    result = process_results(crops)
-    return result
+        crops = get_most_recent_daily()
+    return process_results(crops)
 
 
-@app.route('/crops/daily/category')
-@app.route('/crops/daily/category/<category>')
+@app.route('/crops/daily/category')  # list categories available to daily crops
+@app.route('/crops/daily/category/<category>')  # get daily crops  by categories
 @crossdomain(origin='*')
 @as_json
 def crop_daily_categories(category=None):
-    offset = 0
-    limit = 100
-
-    if len(request.args) > 0:
-        if request.args.get("limit"):  # Check limit to determine how much records to return
-            limit = int(request.args.get("limit"))
-        if request.args.get("offset"):  # Check offset to determine which record to start from
-            offset = int(request.args.get("offset"))
+    from models import get_distinct_categories, DailyCrops
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
 
     if category:
-        options = process_options(format_category_query(category), request)
-        crops = mongo.db.daily.find(options).sort("date", -1).skip(offset).limit(limit)
-        res = process_results(crops)
+        query = db.session.query(DailyCrops)
+        query = query.filter(func.upper(DailyCrops.category) == func.upper(category))
+        query = process_query(DailyCrops, query, request)
+        query_results = query.limit(limit).offset(offset).all()
+        res = process_results(query_results)
     else:
-        res = mongo.db.daily.distinct("category")
-
+        res = get_distinct_categories()
     return res
 
 
@@ -281,17 +205,16 @@ def crop_daily_categories(category=None):
 @crossdomain(origin='*')
 @as_json
 def crop_daily_commodity(commodity=None):
-    res = []
+    from sqlalchemy import or_
+    from models import DailyCropsRecent
     if commodity is not None and len(commodity) > 1:
-        commodity = commodity.lower().split(",")
-        qry = []
-        for c in commodity:
-            qry.append({"commodity": c})
-        crops = mongo.db.daily.find({"$or": qry})
-        res = process_results(crops)
+        commodities = commodity.lower().split(",")
+        query = db.session.query(DailyCropsRecent)
+        query_results = query.filter(or_(DailyCropsRecent.commodity == v for v in commodities)).all()
+        return process_results(query_results)
     else:
-        logger.debug("Commodity was not specified")
-    return res
+        return [], 404
+
 
 # Monthly API
 
@@ -299,13 +222,15 @@ def crop_daily_commodity(commodity=None):
 @crossdomain(origin='*')
 @as_json
 def monthly_dates_list():
-    end = datetime.now()
-    start = end - timedelta(days=300)  # default to 30 days difference
-    query = {"date": {'$gte': start, '$lt': end}}  # between dates syntax for mongodb
-    dates = mongo.db.monthly.find(query).distinct("date")
-    dates = map(lambda x: x.strftime('%Y-%m-%dT%H:%M:%S'), dates)
+    from models import MonthlyCrops
 
-    return dates
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
+    records = db.session \
+        .query(MonthlyCrops.date).distinct() \
+        .order_by(desc(MonthlyCrops.date)) \
+        .limit(limit).offset(offset).all()
+    return [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
 
 
 @app.route('/crops/monthly')
@@ -313,35 +238,29 @@ def monthly_dates_list():
 @crossdomain(origin='*')
 @as_json
 def monthly_crops(date=None):
-    res = []
-    options = {}
-    offset = 0
-    limit = 100
+    from models import MonthlyCrops
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
     try:
+        query = db.session.query(MonthlyCrops)
         if date:
-            if date != "all":  # if the date is all then no specified date query will return all
-                try:  # check if the date is either in one of the two supported formats
-                    options['date'] = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
-                except ValueError:
-                    options['date'] = datetime.strptime(date, '%Y-%m-%d')
+            try:  # check if the date is either in one of the two supported formats
+                query_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
+            except ValueError:
+                query_date = datetime.strptime(date, '%Y-%m-%d')
+
+            query = query.filter(func.DATE(MonthlyCrops.date) == query_date)
+            query = process_query(MonthlyCrops, query, request)
+            query_results = query.limit(limit).offset(offset).all()
+            return process_results(query_results)
         else:
-            d = datetime.now()
-            d = d - timedelta(days=150)
-            options['date'] = {'$gte': d, '$lt': datetime.now()}
-
-        if len(request.args) > 0:
-            if request.args.get("limit"):  # Check limit to determine how much records to return
-                limit = int(request.args.get("limit"))
-            if request.args.get("offset"):  # Check offset to determine which record to start from
-                offset = int(request.args.get("offset"))
-
-        options = process_options(options, request)
-        crops = mongo.db.monthly.find(options).sort("date", -1).skip(offset).limit(limit)
-        res = process_results(crops)
+            query = process_query(MonthlyCrops, query, request)
+            query_results = query.limit(limit).offset(offset).all()
+            return process_results(query_results)
     except Exception as e:
         logger.error(e)
 
-    return res
+    return []
 
 
 @app.route('/crops/monthly/category/')
@@ -349,29 +268,18 @@ def monthly_crops(date=None):
 @crossdomain(origin='*')
 @as_json
 def monthly_crop_category(category=None):
-    res = []
-    options = {}
-    offset = 0
-    limit = 100
+    from models import get_distinct_categories, MonthlyCrops
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
 
-    try:
-        if category:
-            if len(request.args) > 0:
-                if request.args.get("limit"):  # Check limit to determine how much records to return
-                    limit = int(request.args.get("limit"))
-                if request.args.get("offset"):  # Check offset to determine which record to start from
-                    offset = int(request.args.get("offset"))
-
-            options = process_options(options, request)
-            options.update(format_category_query(category))  # merge the two dictionaries together
-
-            crops = mongo.db.daily.find(options).sort("date", -1).skip(offset).limit(limit)
-            res = process_results(crops)
-        else:
-            res = mongo.db.monthly.distinct("category")
-    except Exception as e:
-        logger.error(e)
-
+    if category:
+        query = db.session.query(MonthlyCrops)
+        query = query.filter(func.upper(MonthlyCrops.category) == func.upper(category))
+        query = process_query(MonthlyCrops, query, request)
+        query_results = query.limit(limit).offset(offset).all()
+        res = process_results(query_results)
+    else:
+        res = get_distinct_categories()
     return res
 
 
@@ -380,36 +288,27 @@ def monthly_crop_category(category=None):
 @crossdomain(origin='*')
 @as_json
 def monthly_crop_commodity(commodity=None):
-    res = []
-    options = {}
-    offset = 0
-    limit = 10
-    qry = []
+    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
+    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
 
     try:
-        if commodity:
-            if len(request.args) > 0:
-                if request.args.get("limit"):  # Check limit to determine how much records to return
-                    limit = int(request.args.get("limit"))
-                if request.args.get("offset"):  # Check offset to determine which record to start from
-                    offset = int(request.args.get("offset"))
-
-            options = process_options(options, request)
-
-            commodity = commodity.lower().split(",")
-            for c in commodity:
-                qry.append({"commodity": c})
-
-            options = options.update({"$or": qry})
-
-            crops = mongo.db.daily.find(options).sort("date", -1).skip(offset).limit(limit)
-            res = process_results(crops)
+        from sqlalchemy import or_
+        from models import MonthlyCrops
+        if commodity is not None and len(commodity) > 1:
+            commodities = commodity.lower().split(",")
+            query = db.session.query(MonthlyCrops)
+            query_results = query.filter(or_(MonthlyCrops.commodity == v for v in commodities)) \
+                .limit(limit) \
+                .offset(offset) \
+                .all()
+            return process_results(query_results)
         else:
-            res = mongo.db.monthly.distinct("commodity")
+            return [], 404
     except Exception as e:
         logger.error(e)
 
-    return res
+    return [], 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

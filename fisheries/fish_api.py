@@ -1,9 +1,10 @@
-from flask import Blueprint, current_app, request, make_response
-from dataManager import mongo
-from bson import json_util
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import update_wrapper
-from flask import json, jsonify
+
+from flask import Blueprint, current_app, request, make_response
+from flask import jsonify
+
+from dataManager import mongo
 
 fisheries_file = Blueprint('fisheries_file', __name__)
 

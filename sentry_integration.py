@@ -1,3 +1,4 @@
+import os
 import logging
 
 import sentry_sdk
@@ -9,7 +10,11 @@ sentry_logging = LoggingIntegration(
     event_level=logging.ERROR  # Send no events from log messages
 )
 
-sentry_sdk.init(
-    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
-    integrations=[FlaskIntegration(), sentry_logging]
-)
+is_production = True if "ENV" in os.environ else False
+
+if is_production:
+    logging.info('Enabling Sentry Integration')
+    sentry_sdk.init(
+        dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
+        integrations=[FlaskIntegration(), sentry_logging]
+    )

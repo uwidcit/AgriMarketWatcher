@@ -27,3 +27,10 @@ pip install -r requirements.txt
 
 using multipack for heroku installatin
 https://github.com/Stibbons/heroku-buildpack-libffi
+
+
+### Database Upgrade
+
+```bash
+heroku run python manage.py db upgrade --app agrimarketwatch
+```
