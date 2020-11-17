@@ -1,6 +1,8 @@
 import logging
 import sys
 
+# noinspection PyUnresolvedReferences
+import sentry_integration
 
 logger = logging.getLogger("agrimarketwatcher")
 formatter = logging.Formatter('%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s')

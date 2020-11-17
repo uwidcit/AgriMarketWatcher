@@ -1,15 +1,11 @@
-import json
+import datetime
+import time
+
 import requests
 import xlrd
-import time
 from xlrd import open_workbook
-from pymongo import MongoClient
-import datetime
 
-
-import sentry_integration
 from log_configuration import logger
-from dataManager import connect2DB
 
 months = ["January", "February",
           "March", "April", "May",
@@ -20,10 +16,10 @@ months = ["January", "February",
 markets = ['POSWFM', 'OVWFM']
 
 
-
 def check_if_url_is_valid(url):
     status = requests.head(url).status_code
     return status == 200 or status == 304
+
 
 def get_url(market, year, month, day=None, with_zero=True):
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Daily"
@@ -35,7 +31,6 @@ def get_url(market, year, month, day=None, with_zero=True):
     if with_zero:
         day = day if day > 9 else "0{0}".format(day)
     return base_url + "%20" + market + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
-
 
 
 def retrieveData(daily_fish_url, market, year, month, day):
@@ -52,7 +47,7 @@ def retrieveData(daily_fish_url, market, year, month, day):
                     if sheet.cell_value(row, 0).encode('ascii').lower() != "commodity":
                         cols = {  # Convert row information to a dictionary
                             'commodity': sheet.cell_value(row, 0).encode('ascii').lower(),
-                            'unit':  sheet.cell_value(row, 1).encode('ascii').lower(),
+                            'unit': sheet.cell_value(row, 1).encode('ascii').lower(),
                             'min_price': sheet.cell_value(row, 2),
                             'max_price': sheet.cell_value(row, 3),
                             'frequent_price': sheet.cell_value(row, 4),
@@ -62,11 +57,16 @@ def retrieveData(daily_fish_url, market, year, month, day):
                             'market': market
                         }
                         # Set the value to 0 if absent
-                        cols['min_price'] = cols['min_price'] if sheet.cell_type(row, 2) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['max_price'] = cols['max_price'] if sheet.cell_type(row, 3) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['frequent_price'] = cols['frequent_price'] if sheet.cell_type(row, 4) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['average_price'] = cols['average_price'] if sheet.cell_type(row, 5) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['volume'] = cols['volume'] if sheet.cell_type(row, 6) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols['min_price'] = cols['min_price'] if sheet.cell_type(row, 2) not in (
+                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols['max_price'] = cols['max_price'] if sheet.cell_type(row, 3) not in (
+                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols['frequent_price'] = cols['frequent_price'] if sheet.cell_type(row, 4) not in (
+                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols['average_price'] = cols['average_price'] if sheet.cell_type(row, 5) not in (
+                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols['volume'] = cols['volume'] if sheet.cell_type(row, 6) not in (
+                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
                         # Add row record to the collection
                         records.append(cols)
     except Exception as e:
@@ -102,11 +102,10 @@ def saveMostRecentFish(records):
     try:
         if len(records) > 0:
             logger.info("Retrieve {0} fishing records for today".format(len(records)))
-            db = connect2DB()
             # Store most recent daily
-            db.drop_collection("dailyFishRecent")  # drop as we only need current readings
-            db.dailyFishRecent.insert(records)  # Insert recent fish records
-            # db.dailyFish.insert(records)  # Insert to the collection of fish records (TODO disabled until we do a better job of handling repeats)
+            # db.drop_collection("dailyFishRecent")  # drop as we only need current readings
+            # db.dailyFishRecent.insert(records)  # Insert recent fish records
+            logger.info('Skipped storing fish records for now')
             return True
     except Exception as e:
         logger.error(e)

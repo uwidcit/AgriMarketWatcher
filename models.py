@@ -198,14 +198,14 @@ class MonthlyCropsRecent(db.Model):
 def store_monthly(records):
     length = 0
     try:
-        if records:
+        if records and len(records) > 0:
             for in_record in records:
                 db_rec = MonthlyCrops.from_dict(in_record)
                 db.session.add(db_rec)
             db.session.commit()
             length = len(records)
     except Exception as e:
-        logger.error(e)  # TODO Raise sentry error
+        logger.error(e)
         db.session.rollback()
     return length
 

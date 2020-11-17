@@ -1,6 +1,5 @@
 import os
-import re  # regular expression
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import Flask, request, render_template
 from flask_json import FlaskJSON, as_json
