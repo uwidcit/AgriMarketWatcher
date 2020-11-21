@@ -5,7 +5,7 @@ from log_configuration import logger
 from flask import Flask, request, render_template
 from flask_json import FlaskJSON, as_json
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, asc
 
 from app_util import crossdomain
 from fisheries import fisheries_file
@@ -155,6 +155,7 @@ def daily_dates_list(date=None):
             # res = [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
             records = db.session \
                 .query(DailyCrops.date).distinct() \
+                .order_by(asc(DailyCrops.date)) \
                 .limit(limit).offset(offset).all()
             res = [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
     except Exception as e:
