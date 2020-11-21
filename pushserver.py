@@ -86,6 +86,9 @@ def compare_with_previous_daily_records(daily_records):
 def run():
     date_now = datetime.datetime.now()
     logger.info("Requesting crop data on {0}".format(date_now))
+    current_crop_records = {'monthly': [], 'daily': []}
+    current_fish_records = []
+
 
     try:
         # Attempt to retrieve Crops Information
@@ -111,6 +114,11 @@ def run():
             logger.debug("Unable to successfully retrieve fish data")
     except Exception as e:
         logger.error(e)
+
+    return {
+        'crops': current_crop_records,
+        'fish': current_fish_records
+    }
 
 
 if __name__ == "__main__":

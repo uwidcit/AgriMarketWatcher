@@ -5,8 +5,10 @@ from flask import Blueprint, current_app, request, make_response
 from flask import jsonify
 
 from dataManager import mongo
+from app_util import crossdomain
 
 fisheries_file = Blueprint('fisheries_file', __name__)
+
 
 def convert_compatible_json(fish):
     fish["date"] = fish["date"].strftime('%Y-%m-%dT%H:%M:%S')  # convert the date object to a string
@@ -22,54 +24,12 @@ def process_results(cursor):
     return res
 
 
-def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            h['Access-Control-Allow-Credentials'] = 'true'
-            h['Access-Control-Allow-Headers'] = \
-                "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-
-    return decorator
-
-
 @fisheries_file.route("/fishes")
 @crossdomain(origin='*')
 def fish_list():
     fishes = mongo.db.dailyFishRecent.distinct('commodity')
     return jsonify(fishes)
+
 
 @fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
 @fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
@@ -89,6 +49,7 @@ def most_recent_daily_fish_merged(fish=None):
     # return json_util.dumps(fishesRecs, default=json_util.default, indent=4)
     return jsonify(fishesRecs)
 
+
 @fisheries_file.route('/fishes/markets')
 @crossdomain(origin='*')
 def market_list():
@@ -98,7 +59,7 @@ def market_list():
     }, {
         'name': 'Orange Valley Fish Market',
         'code': 'OVWFM'
-     }]
+    }]
     return jsonify(markets)
 
 
@@ -109,6 +70,7 @@ def most_recent_daily_fish_by_market(market):
     result = process_results(fishes)
     # return json_util.dumps(result, default=json_util.default, indent=4)
     return jsonify(result)
+
 
 if __name__ == "__main__":  # executed by running python -m fisheries.fish_api from project root
     print("Running the API calls for simple validation")

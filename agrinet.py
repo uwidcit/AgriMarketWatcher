@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from log_configuration import logger
 
 from flask import Flask, request, render_template
 from flask_json import FlaskJSON, as_json
@@ -8,7 +9,6 @@ from sqlalchemy import func, desc
 
 from app_util import crossdomain
 from fisheries import fisheries_file
-from log_configuration import logger
 
 app = Flask(__name__)
 FlaskJSON(app)
@@ -21,14 +21,6 @@ db = SQLAlchemy(app)
 app.register_blueprint(fisheries_file)  # Add the fisheries related functionality to file
 # Detect If Running in Development mode or on server
 app.debug = False if "ENV" in os.environ else True
-
-
-# Helper/Utility functions
-def convert_compatible_json(crop):
-    crop["date"] = crop["date"].strftime('%Y-%m-%dT%H:%M:%S')  # convert the date object to a string
-    crop["id"] = str(crop["_id"])  # convert mongodb id to a string
-    del crop["_id"]  # remove original key
-    return crop
 
 
 def process_results(query_results):
@@ -144,9 +136,13 @@ def daily_dates_list(date=None):
             try:  # check if the date is either in one of the two supported formats
                 query_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
             except ValueError:
-                query_date = datetime.strptime(date, '%Y-%m-%d')
+                try:
+                    query_date = datetime.strptime(date, '%Y-%m-%d')
+                except ValueError:
+                    logger.error('Received an invalid date from the user {0}'.format(date))
+                    return [], 404
 
-            query = query.filter(func.DATE(DailyCrops.date) == date)
+            query = query.filter(func.DATE(DailyCrops.date) == query_date)
             query = process_query(DailyCrops, query, request)
 
             query_results = query.limit(limit).offset(offset).all()
@@ -246,7 +242,11 @@ def monthly_crops(date=None):
             try:  # check if the date is either in one of the two supported formats
                 query_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
             except ValueError:
-                query_date = datetime.strptime(date, '%Y-%m-%d')
+                try:
+                    query_date = datetime.strptime(date, '%Y-%m-%d')
+                except ValueError:
+                    logger.error('Received an invalid date from the user {0}'.format(date))
+                    return [], 404
 
             query = query.filter(func.DATE(MonthlyCrops.date) == query_date)
             query = process_query(MonthlyCrops, query, request)
@@ -307,6 +307,13 @@ def monthly_crop_commodity(commodity=None):
         logger.error(e)
 
     return [], 500
+
+@app.route('/latest')
+@crossdomain(origin='*')
+@as_json
+def fetch_latest():
+    from pushserver import run
+    return run()
 
 
 if __name__ == "__main__":
