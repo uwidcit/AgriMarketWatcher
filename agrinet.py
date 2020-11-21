@@ -148,9 +148,13 @@ def daily_dates_list(date=None):
             query_results = query.limit(limit).offset(offset).all()
             return process_results(query_results)
         else:
+            # records = db.session \
+            #     .query(DailyCrops.date).distinct() \
+            #     .order_by(desc(DailyCrops.date)) \
+            #     .limit(limit).offset(offset).all()
+            # res = [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
             records = db.session \
                 .query(DailyCrops.date).distinct() \
-                .order_by(desc(DailyCrops.date)) \
                 .limit(limit).offset(offset).all()
             res = [rec.date.strftime('%Y-%m-%dT%H:%M:%S') for rec in records]
     except Exception as e:
