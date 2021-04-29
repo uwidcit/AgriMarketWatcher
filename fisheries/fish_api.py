@@ -1,82 +1,65 @@
-from datetime import timedelta
-from functools import update_wrapper
-
-from flask import Blueprint, current_app, request, make_response
+from flask import Blueprint
 from flask import jsonify
-
+from flask_json import as_json
 from dataManager import mongo
-from app_util import crossdomain
+from app_util import crossdomain, process_results
 
-fisheries_file = Blueprint('fisheries_file', __name__)
-
-
-def convert_compatible_json(fish):
-    fish["date"] = fish["date"].strftime('%Y-%m-%dT%H:%M:%S')  # convert the date object to a string
-    fish["id"] = str(fish["_id"])  # convert mongodb id to a string
-    del fish["_id"]  # remove original key
-    return fish
-
-
-def process_results(cursor):
-    res = []
-    for c in cursor:  # Iterates through each result from the mongodb result cursor
-        res.append(convert_compatible_json(c))  # Pushes (appends) result to a list of results
-    return res
+fisheries_file = Blueprint("fisheries_file", __name__)
 
 
 @fisheries_file.route("/fishes")
-@crossdomain(origin='*')
+@crossdomain(origin="*")
+@as_json
 def fish_list():
-    fishes = mongo.db.dailyFishRecent.distinct('commodity')
-    return jsonify(fishes)
+    from models import get_distinct_fish_commodity
+
+    return get_distinct_fish_commodity()
 
 
-@fisheries_file.route('/fishes/daily/recent')  # Returns the daily prices of the most recent entry
-@fisheries_file.route('/fishes/daily/recent/<fish>')  # Returns the most recent daily price of the specified comodity
-@crossdomain(origin='*')
+@fisheries_file.route(
+    "/fishes/daily/recent"
+)  # Returns the daily prices of the most recent entry
+@fisheries_file.route(
+    "/fishes/daily/recent/<fish>"
+)  # Returns the most recent daily price of the specified comodity
+@crossdomain(origin="*")
+@as_json
 def most_recent_daily_fish_merged(fish=None):
-    if fish:
-        fishes = mongo.db.dailyFishRecent.find({"commodity": fish})  # If we have a crop that we want to obtain
+    from models import get_most_recent_daily_fish, get_daily_recent_by_commodity_fish
+
+    if fish:  # If we have a crop that we want to obtain
+        res = get_daily_recent_by_commodity_fish(fish)  # TODO - fails unique constraint
+        if not res:
+            return None, 404
+        fishes = [res]
     else:
-        fishes = mongo.db.dailyFishRecent.find()
-    results = process_results(fishes)
-    fishesRecs = {}
-    for rec in results:
-        commodity = rec['commodity']
-        if commodity not in fishesRecs:
-            fishesRecs[commodity] = {}
-        fishesRecs[commodity][rec['market']] = rec
-    # return json_util.dumps(fishesRecs, default=json_util.default, indent=4)
-    return jsonify(fishesRecs)
+        fishes = get_most_recent_daily_fish()
+    return process_results(fishes)
 
 
-@fisheries_file.route('/fishes/markets')
-@crossdomain(origin='*')
+@fisheries_file.route("/fishes/markets")
+@crossdomain(origin="*")
+@as_json
 def market_list():
-    markets = [{
-        'name': 'Port of Spain Fish Market',
-        'code': 'POSWFM'
-    }, {
-        'name': 'Orange Valley Fish Market',
-        'code': 'OVWFM'
-    }]
-    return jsonify(markets)
+    return [
+        {"name": "Port of Spain Fish Market", "code": "POSWFM"},
+        {"name": "Orange Valley Fish Market", "code": "OVWFM"},
+    ]
 
 
-@fisheries_file.route('/fishes/daily/recent/market/<market>')
-@crossdomain(origin='*')
+@fisheries_file.route("/fishes/daily/recent/market/<market>")
+@crossdomain(origin="*")
+@as_json
 def most_recent_daily_fish_by_market(market):
-    fishes = mongo.db.dailyFishRecent.find({"market": market})
-    result = process_results(fishes)
-    # return json_util.dumps(result, default=json_util.default, indent=4)
-    return jsonify(result)
+    return []
 
 
-if __name__ == "__main__":  # executed by running python -m fisheries.fish_api from project root
+# executed by running python -m fisheries.fish_api from project root
+if __name__ == "__main__":
     print("Running the API calls for simple validation")
     # print(fish_list())
     # print(market_list())
     # print(most_recent_daily_fish())
     # print(most_recent_daily_fish('pampano'))
     # print(most_recent_daily_fish_by_market("POSWFM"))
-    print(most_recent_daily_fish_merged())
+    # print(most_recent_daily_fish_merged())

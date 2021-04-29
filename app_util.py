@@ -46,3 +46,6 @@ def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_t
 
     return decorator
 
+
+def process_results(query_results):
+    return [rec.as_dict() for rec in query_results]

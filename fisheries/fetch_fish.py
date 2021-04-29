@@ -97,27 +97,10 @@ def getMostRecentFishByMarket(market):
         return []
 
 
-def saveMostRecentFish(records):
-    # Attempt to save the retrieved records to the database
-    try:
-        if len(records) > 0:
-            logger.info("Retrieve {0} fishing records for today".format(len(records)))
-            # Store most recent daily
-            # db.drop_collection("dailyFishRecent")  # drop as we only need current readings
-            # db.dailyFishRecent.insert(records)  # Insert recent fish records
-            logger.info('Skipped storing fish records for now')
-            return True
-    except Exception as e:
-        logger.error(e)
-    return None
-
-
 def getMostRecentFish():
     records = []
     for market in markets:
         records = records + getMostRecentFishByMarket(market)
-    if saveMostRecentFish(records):
-        logger.info("{0} fish price records saved successfully".format(len(records)))
     return records
 
 

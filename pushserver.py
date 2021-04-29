@@ -7,8 +7,11 @@ from log_configuration import logger
 from models import (
     get_most_recent_monthly,
     get_most_recent_daily,
+    get_most_recent_daily_fish,
     store_most_recent_daily,
+    store_most_recent_daily_fish,
     store_daily,
+    store_daily_fish,
     store_most_recent_monthly,
     store_monthly,
 )
@@ -54,6 +57,25 @@ def notify_if_daily_crop_price_difference(prev_rec, curr_rec):
         logger.info("price for {0} remained the same".format(commodity))
 
 
+def notify_if_daily_crop_fish_difference(prev_rec, curr_rec):
+    commodity = curr_rec["commodity"]
+    curr_price = curr_rec["average_price"]
+    unit = curr_rec["unit"]
+
+    if abs(prev_rec.average_price - curr_rec["average_price"]) > MIN_DIFF:
+        logger.info("price for {0} changed to ".format(commodity))
+        # Build message and send push notification of change record
+        change = "decreased" if prev_rec.average_price >= curr_price else "increased"
+        message = "{0} has {1} to ${2} per {3}".format(
+            commodity, change, curr_price, unit
+        )
+        name = commodity.replace(" ", "")
+        logger.info("Sending message: {0}".format(message))
+        fcm.notify(message, name)
+    else:
+        logger.info("price for {0} remained the same".format(commodity))
+
+
 def handle_difference(previous_recs, current_recs, record_type="daily", notify=False):
     try:
         if previous_recs is not None and current_recs is not None:
@@ -86,6 +108,54 @@ def handle_difference(previous_recs, current_recs, record_type="daily", notify=F
         logger.error(e)
 
 
+def handle_difference_fish(
+    previous_recs, current_recs, record_type="daily", notify=False
+):
+    try:
+        if previous_recs and current_recs:
+            logger.info("[FISH] Received value for both previous rec and curr rec")
+            previous_date = previous_recs[0].date.ctime()
+            current_date = current_recs[0]["date"].ctime()
+            logger.info(
+                "Previous: {0} /t Current: {1}".format(previous_date, current_date)
+            )
+            if previous_date != current_date:
+                if record_type == "daily":
+                    logger.info("[FISH] Attempting to store most recent records")
+                    store_most_recent_daily_fish(current_recs)
+                    logger.info("[FISH] Attempting to store daily records")
+                    store_daily_fish(current_recs)
+
+                    for prev_rec in previous_recs:
+                        for curr_rec in current_recs:
+                            if prev_rec.commodity == curr_rec["commodity"]:
+                                if curr_rec["average_price"] > 0:
+                                    logger.info(
+                                        "[FISH] The crop {0} has a value change for {1}".format(
+                                            curr_rec["commodity"],
+                                            curr_rec["average_price"],
+                                        )
+                                    )
+                                    if notify:
+                                        notify_if_daily_crop_fish_difference(
+                                            prev_rec, curr_rec
+                                        )
+                                    else:
+                                        logger.info("[FISH] Skipping notification")
+            else:
+                logger.info("[FISH] no new record found")
+        elif not previous_recs:
+            logger.info("[FISH] No previous fish records exists")
+            logger.info("[FISH] Attempting to store the first most recent records")
+            store_most_recent_daily_fish(current_recs)
+            logger.info("[FISH] Attempting to store the first daily records")
+            store_daily_fish(current_recs)
+        else:
+            logger.info("[FISH] Doesn't exist")
+    except Exception as e:
+        logger.error(e)
+
+
 def compare_with_previous_monthly_records(monthly_records, notify):
     last_recent_recs = get_most_recent_monthly()
     handle_difference(last_recent_recs, monthly_records, "monthly", notify=notify)
@@ -94,6 +164,11 @@ def compare_with_previous_monthly_records(monthly_records, notify):
 def compare_with_previous_daily_records(daily_records, notify):
     last_recent_recs = get_most_recent_daily()
     handle_difference(last_recent_recs, daily_records, "daily", notify=notify)
+
+
+def compare_with_previous_daily_fish_records(daily_records, notify):
+    last_recent_recs = get_most_recent_daily_fish()
+    handle_difference_fish(last_recent_recs, daily_records, "daily", notify=notify)
 
 
 def run(notify=True):
@@ -108,9 +183,13 @@ def run(notify=True):
         current_crop_records = fetcher.get_most_recent()
         if current_crop_records:
             logger.info("Successfully retrieved crop data")
-            compare_with_previous_monthly_records(current_crop_records['monthly'], notify=notify)
+            compare_with_previous_monthly_records(
+                current_crop_records["monthly"], notify=notify
+            )
 
-            compare_with_previous_daily_records(current_crop_records["daily"], notify=notify)
+            compare_with_previous_daily_records(
+                current_crop_records["daily"], notify=notify
+            )
         else:
             logger.debug("Unable to successfully retrieve crop data")
     except Exception as e:
@@ -121,15 +200,26 @@ def run(notify=True):
         logger.info("Requesting fish data on {0}".format(date_now))
         current_fish_records = fisheries.getMostRecentFish()
         if current_fish_records:
-            logger.info("Successfully retrieved fish data")
+            logger.info(
+                "Successfully retrieved {} fish records".format(
+                    len(current_fish_records)
+                )
+            )
+            compare_with_previous_daily_fish_records(
+                current_fish_records, notify=notify
+            )
         else:
             logger.debug("Unable to successfully retrieve fish data")
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=True)
 
     return {"crops": current_crop_records, "fish": current_fish_records}
 
 
 if __name__ == "__main__":
-
-    run(notify=False)
+    results = run(notify=False)
+    print("Retrieved:")
+    #
+    # from pprint import pprint
+    #
+    # pprint(results)

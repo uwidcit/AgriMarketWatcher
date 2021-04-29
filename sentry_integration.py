@@ -23,5 +23,6 @@ sentry_sdk.init(
         sentry_logging
     ],
     traces_sample_rate=1.0,
-    environment=environment
+    environment=environment,
+    attach_stacktrace=True
 )

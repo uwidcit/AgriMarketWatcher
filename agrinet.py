@@ -7,7 +7,7 @@ from flask_json import FlaskJSON, as_json
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, desc, asc
 
-from app_util import crossdomain
+from app_util import crossdomain, process_results
 from fisheries import fisheries_file
 
 app = Flask(__name__)
@@ -23,10 +23,6 @@ app.register_blueprint(
 )  # Add the fisheries related functionality to file
 # Detect If Running in Development mode or on server
 app.debug = False if "ENV" in os.environ else True
-
-
-def process_results(query_results):
-    return [rec.as_dict() for rec in query_results]
 
 
 def process_query(target_class, query, req):

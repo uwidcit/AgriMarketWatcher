@@ -286,7 +286,7 @@ def store_most_recent_daily(recent_records):
             # drop all the records in the table
             num_rows_deleted = db.session.query(DailyCropsRecent).delete()
             logger.info(
-                "Deleted {0} records from the Monthly Crops Recent table".format(
+                "Deleted {0} records from the Daily Crops Recent table".format(
                     num_rows_deleted
                 )
             )
@@ -296,7 +296,7 @@ def store_most_recent_daily(recent_records):
             db.session.commit()
             length = len(recent_records)
     except Exception as e:
-        logger.error(e)  # TODO Raise sentry error
+        logger.critical(e, exc_info=True)
         db.session.rollback()
     return length
 
@@ -429,6 +429,10 @@ class DailyFish(db.Model):
 
         return instance
 
+    def as_dict(self):
+        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
+        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
+        return dict_rep
 
 class DailyFishRecent(db.Model):
     __tablename__ = "daily_fish_recent"
@@ -501,3 +505,58 @@ class DailyFishRecent(db.Model):
             instance.id = record["id"]
 
         return instance
+
+    def as_dict(self):
+        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
+        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
+        return dict_rep
+
+
+def get_distinct_fish_commodity():
+    commodities = list(db.session.query(DailyFishRecent.commodity).distinct())
+    return [commodity[0] for commodity in commodities]
+
+
+def get_most_recent_daily_fish():
+    return db.session.query(DailyFishRecent).all()
+
+
+def store_daily_fish(records):
+    length = 0
+    try:
+        if records:
+            for in_record in records:
+                db_rec = DailyFish.from_dict(in_record)
+                db.session.add(db_rec)
+            db.session.commit()
+            length = len(records)
+    except Exception as e:
+        logger.critical(e, exc_info=True)
+        db.session.rollback()
+    return length
+
+
+def store_most_recent_daily_fish(recent_records):
+    length = 0
+    try:
+        if recent_records and len(recent_records) > 0:
+            # drop all the records in the table
+            num_rows_deleted = db.session.query(DailyFishRecent).delete()
+            logger.info(
+                "Deleted {0} records from the Daily Fish Recent table".format(
+                    num_rows_deleted
+                )
+            )
+            for in_record in recent_records:
+                db_rec = DailyFishRecent.from_dict(in_record)
+                db.session.add(db_rec)
+            db.session.commit()
+            length = len(recent_records)
+    except Exception as e:
+        logger.critical(e, exc_info=True)
+        db.session.rollback()
+    return length
+
+
+def get_daily_recent_by_commodity_fish(commodity):
+    return db.session.query(DailyFishRecent.commodity == commodity).one()
