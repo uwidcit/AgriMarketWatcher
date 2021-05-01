@@ -434,6 +434,7 @@ class DailyFish(db.Model):
         dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
         return dict_rep
 
+
 class DailyFishRecent(db.Model):
     __tablename__ = "daily_fish_recent"
 

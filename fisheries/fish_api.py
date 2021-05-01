@@ -1,7 +1,5 @@
 from flask import Blueprint
-from flask import jsonify
 from flask_json import as_json
-from dataManager import mongo
 from app_util import crossdomain, process_results
 
 fisheries_file = Blueprint("fisheries_file", __name__)

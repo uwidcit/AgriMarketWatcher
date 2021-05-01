@@ -7,13 +7,22 @@ from xlrd import open_workbook
 
 from log_configuration import logger
 
-months = ["January", "February",
-          "March", "April", "May",
-          "June", "July", "August",
-          "September", "October",
-          "November", "December"]
+months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
 
-markets = ['POSWFM', 'OVWFM']
+markets = ["POSWFM", "OVWFM"]
 
 
 def check_if_url_is_valid(url):
@@ -30,7 +39,18 @@ def get_url(market, year, month, day=None, with_zero=True):
         months.index(month) + 1
     if with_zero:
         day = day if day > 9 else "0{0}".format(day)
-    return base_url + "%20" + market + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls"
+    return (
+        base_url
+        + "%20"
+        + market
+        + "%20"
+        + str(day)
+        + "%20"
+        + mStr
+        + "%20"
+        + str(year)
+        + ".xls"
+    )
 
 
 def retrieveData(daily_fish_url, market, year, month, day):
@@ -43,30 +63,55 @@ def retrieveData(daily_fish_url, market, year, month, day):
         # For each sheet, check each row for data in specific columns
         for sheet in wb.sheets():
             for row in range(10, sheet.nrows):  # starts at 10, to remove heading rows
-                if sheet.cell_type(row, 0) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-                    if sheet.cell_value(row, 0).encode('ascii').lower() != "commodity":
+                if sheet.cell_type(row, 0) not in (
+                    xlrd.XL_CELL_EMPTY,
+                    xlrd.XL_CELL_BLANK,
+                ):
+                    if sheet.cell_value(row, 0).encode("ascii").lower() != "commodity":
                         cols = {  # Convert row information to a dictionary
-                            'commodity': sheet.cell_value(row, 0).encode('ascii').lower(),
-                            'unit': sheet.cell_value(row, 1).encode('ascii').lower(),
-                            'min_price': sheet.cell_value(row, 2),
-                            'max_price': sheet.cell_value(row, 3),
-                            'frequent_price': sheet.cell_value(row, 4),
-                            'average_price': sheet.cell_value(row, 5),
+                            "commodity": sheet.cell_value(row, 0)
+                            .encode("ascii")
+                            .lower(),
+                            "unit": sheet.cell_value(row, 1).encode("ascii").lower(),
+                            "min_price": sheet.cell_value(row, 2),
+                            "max_price": sheet.cell_value(row, 3),
+                            "frequent_price": sheet.cell_value(row, 4),
+                            "average_price": sheet.cell_value(row, 5),
                             "volume": sheet.cell_value(row, 6),
-                            'date': datetime.datetime(int(year), int(month), int(day)),
-                            'market': market
+                            "date": datetime.datetime(int(year), int(month), int(day)),
+                            "market": market,
                         }
                         # Set the value to 0 if absent
-                        cols['min_price'] = cols['min_price'] if sheet.cell_type(row, 2) not in (
-                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['max_price'] = cols['max_price'] if sheet.cell_type(row, 3) not in (
-                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['frequent_price'] = cols['frequent_price'] if sheet.cell_type(row, 4) not in (
-                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['average_price'] = cols['average_price'] if sheet.cell_type(row, 5) not in (
-                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
-                        cols['volume'] = cols['volume'] if sheet.cell_type(row, 6) not in (
-                        xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) else 0.0
+                        cols["min_price"] = (
+                            cols["min_price"]
+                            if sheet.cell_type(row, 2)
+                            not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK)
+                            else 0.0
+                        )
+                        cols["max_price"] = (
+                            cols["max_price"]
+                            if sheet.cell_type(row, 3)
+                            not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK)
+                            else 0.0
+                        )
+                        cols["frequent_price"] = (
+                            cols["frequent_price"]
+                            if sheet.cell_type(row, 4)
+                            not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK)
+                            else 0.0
+                        )
+                        cols["average_price"] = (
+                            cols["average_price"]
+                            if sheet.cell_type(row, 5)
+                            not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK)
+                            else 0.0
+                        )
+                        cols["volume"] = (
+                            cols["volume"]
+                            if sheet.cell_type(row, 6)
+                            not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK)
+                            else 0.0
+                        )
                         # Add row record to the collection
                         records.append(cols)
     except Exception as e:
@@ -88,9 +133,15 @@ def getMostRecentFishByMarket(market):
             for day in reversed(range(day + 1)):
                 for wz in with_zeros:
                     daily_fish_url = get_url(market, year, month_num, day, wz)
-                    logger.info("Attempting to retrieve information for: {0}-{1}-{2}".format(day, month_num, year))
+                    logger.info(
+                        "Attempting to retrieve information for: {0}-{1}-{2}".format(
+                            day, month_num, year
+                        )
+                    )
                     if check_if_url_is_valid(daily_fish_url):
-                        recs = retrieveData(daily_fish_url, market, year, month_num, day)
+                        recs = retrieveData(
+                            daily_fish_url, market, year, month_num, day
+                        )
                         return recs  # Fetch the latest value and terminate
     except Exception as e:
         logger.error(e)

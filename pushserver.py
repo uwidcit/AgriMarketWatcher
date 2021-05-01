@@ -57,7 +57,7 @@ def notify_if_daily_crop_price_difference(prev_rec, curr_rec):
         logger.info("price for {0} remained the same".format(commodity))
 
 
-def notify_if_daily_crop_fish_difference(prev_rec, curr_rec):
+def notify_if_daily_fish_difference(prev_rec, curr_rec):
     commodity = curr_rec["commodity"]
     curr_price = curr_rec["average_price"]
     unit = curr_rec["unit"]
@@ -70,8 +70,8 @@ def notify_if_daily_crop_fish_difference(prev_rec, curr_rec):
             commodity, change, curr_price, unit
         )
         name = commodity.replace(" ", "")
-        logger.info("Sending message: {0}".format(message))
-        fcm.notify(message, name)
+        logger.info("Attempting to send message: {0} using Firebase".format(message))
+        fcm.notify(message, name, title="Fish Price")
     else:
         logger.info("price for {0} remained the same".format(commodity))
 
@@ -137,7 +137,7 @@ def handle_difference_fish(
                                         )
                                     )
                                     if notify:
-                                        notify_if_daily_crop_fish_difference(
+                                        notify_if_daily_fish_difference(
                                             prev_rec, curr_rec
                                         )
                                     else:
