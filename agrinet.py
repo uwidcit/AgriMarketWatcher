@@ -184,7 +184,8 @@ def daily_dates_list(date=None):
 @crossdomain(origin="*")
 @as_json
 def most_recent_daily_data(crop=None):
-    """Returns the daily prices of the most recent entry or the most recent daily price of the specified commodity."""
+    """Returns the daily prices of the most recent entry
+    or the most recent daily price of the specified commodity."""
     from models import get_most_recent_daily, get_daily_recent_by_commodity
 
     if crop:  # If we have a crop that we want to obtain

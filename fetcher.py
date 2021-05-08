@@ -1,14 +1,11 @@
 import requests
 import xlrd
+import time
 from datetime import datetime
 from xlrd import open_workbook
 from functools import partial
 import multiprocessing
 from multiprocessing import Pool
-
-import json
-import time
-import datetime
 from log_configuration import logger
 
 from models import store_most_recent_daily, store_most_recent_monthly
@@ -37,8 +34,8 @@ MONTHS = [
     "December",
 ]
 
-base_monthly_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"
-daily_base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"
+base_monthly_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"
+daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"  # noqa: E501
 
 
 # Extracts the data from a row and returns a dictionary
@@ -175,10 +172,7 @@ def check_if_url_is_valid(url):
 
 
 def retrieve_daily(base_url, day, month, year):
-    if str(month).isdigit():
-        mStr = MONTHS[month - 1]
-    else:
-        mStr = month
+    if not str(month).isdigit():
         month = MONTHS.index(month) + 1
 
     url = get_url(base_url, year, month, day)
@@ -188,9 +182,7 @@ def retrieve_daily(base_url, day, month, year):
             # Add the date to each record
             for x in result:
                 if x:
-                    x.update(
-                        {"date": datetime.datetime(int(year), int(month), int(day))}
-                    )
+                    x.update({"date": datetime(int(year), int(month), int(day))})
                 else:
                     result.remove(x)
             return result
@@ -202,10 +194,7 @@ def retrieve_daily(base_url, day, month, year):
 
 
 def retrieve_monthly(base_url, month, year):
-    if str(month).isdigit():
-        mStr = MONTHS[month - 1]
-    else:
-        mStr = month
+    if not str(month).isdigit():
         month = MONTHS.index(month) + 1
 
     url = get_url(base_url, year, month)
@@ -214,36 +203,13 @@ def retrieve_monthly(base_url, month, year):
         if result:
             for x in result:
                 if x:
-                    x.update({"date": datetime.datetime(int(year), int(month), 1)})
+                    x.update({"date": datetime(int(year), int(month), 1)})
             return result
         else:
             logger.error("Unable to extract data from the excel file")
     else:
         logger.debug("No Monthly report found for: {0}-{1}".format(month, year))
     return None
-
-
-# Ideas
-# Create a document in the MongoDB database that stores the the most recent data in the database separately from
-# the rest of the data in addition to loading the the data together with the current data
-# we can then simply use the appropriate url to access the most recent data from the MongoDB
-# 1.
-
-# To prevent the repeated parsing of xls files, we can store a list of read xls files
-
-
-# Parses the json returned by mongoDB in the format for url logger and returns a set of urls
-def extract_urls_from_json(j_obj):
-    data = json.loads(j_obj)
-    return data["url"]
-
-
-# Gets all of the sheets processed so far by the database
-def get_processed_sheets(db):
-    processed = db.processed.find()
-    if not processed:
-        return set()
-    return set([extract_urls_from_json(x) for x in processed])
 
 
 # Logs sheets that have just been processed into the database
@@ -315,7 +281,6 @@ def get_most_recent():
                 break
             day = int(time.strftime("%d"))
         return {"monthly": m, "daily": d}
-
     except Exception as e:
         logger.error(e)
     finally:
@@ -381,12 +346,14 @@ def run_get_all(store_data, years, months):
 
     if store_data:
         try:
-            # If we have a new set of data for the daily information, we insert that into the database
+            # If we have a new set of data for the daily information,
+            # we write that into the database
             if reset_daily:
                 logger.info("Retrieving the Most Recent Daily Crops")
                 store_most_recent_daily(most_recent_daily)
 
-            # If we have a new set of monthly data, we write that to the database
+            # If we have a new set of monthly data,
+            # we write that to the database
             if reset_monthly:
                 logger.info("Retrieving the Most Recent Monthly Crops")
                 store_most_recent_monthly(most_recent_monthly)

@@ -35,19 +35,19 @@ def get_url(market, year, month, day=None, with_zero=True):
     if with_zero:
         day = day if day > 9 else "0{0}".format(day)
 
-    gen_url=f"{base_url}%20{market}%20{day}%20{mStr}%20{year}.xls"
-    return (
-        base_url
-        + "%20"
-        + market
-        + "%20"
-        + str(day)
-        + "%20"
-        + mStr
-        + "%20"
-        + str(year)
-        + ".xls"
-    )
+    return f"{base_url}%20{market}%20{day}%20{mStr}%20{year}.xls"
+    # return (
+    #     base_url
+    #     + "%20"
+    #     + market
+    #     + "%20"
+    #     + str(day)
+    #     + "%20"
+    #     + mStr
+    #     + "%20"
+    #     + str(year)
+    #     + ".xls"
+    # )
 
 
 def retrieve_fish_data(daily_fish_url, market, year, month, day):
