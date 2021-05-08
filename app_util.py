@@ -1,7 +1,10 @@
+import six
+import os
+import requests
 from datetime import timedelta
 from functools import update_wrapper
-
 from flask import current_app, request, make_response
+from log_configuration import logger
 
 
 def crossdomain(
@@ -14,9 +17,9 @@ def crossdomain(
 ):
     if methods is not None:
         methods = ", ".join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
+    if headers is not None and not isinstance(headers, six.string_types):
         headers = ", ".join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
+    if not isinstance(origin, six.string_types):
         origin = ", ".join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -57,3 +60,13 @@ def crossdomain(
 
 def process_results(query_results):
     return [rec.as_dict() for rec in query_results]
+
+
+def is_production():
+    return True if os.environ.get("ENV", "development") == "production" else False
+
+
+def check_if_url_is_valid(url):
+    logger.info(f"Checking if {url} is available")
+    status = requests.head(url).status_code
+    return status == 200 or status == 304

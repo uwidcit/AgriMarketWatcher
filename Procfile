@@ -1,1 +1,1 @@
-web: python agrinet.py
+web: gunicorn agrinet:app
