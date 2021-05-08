@@ -10,19 +10,21 @@ sentry_logging = LoggingIntegration(
     event_level=logging.ERROR  # Send errors as events
 )
 
-is_production = True if "ENV" in os.environ else False
+is_production = (
+    True if os.environ.get("ENV", "development") == "production" else False
+)
 environment = "production" if is_production else "development"
 logging.info('Environment is {0}'.format(environment))
 
-logging.info('Enabling Sentry Integration')
-sentry_sdk.init(
-    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
-    integrations=[
-        FlaskIntegration(),
-        SqlalchemyIntegration(),
-        sentry_logging
-    ],
-    traces_sample_rate=1.0,
-    environment=environment,
-    attach_stacktrace=True
-)
+# logging.info('Enabling Sentry Integration')
+# sentry_sdk.init(
+#     dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
+#     integrations=[
+#         FlaskIntegration(),
+#         SqlalchemyIntegration(),
+#         sentry_logging
+#     ],
+#     traces_sample_rate=1.0,
+#     environment=environment,
+#     attach_stacktrace=True
+# )

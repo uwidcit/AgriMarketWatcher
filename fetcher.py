@@ -403,10 +403,4 @@ def run_get_all(store_data, years, months):
 
 
 if __name__ == "__main__":
-    from datetime import date
-
-    # today = date.today()
-    # test_year = int(today.strftime("%Y"))
-    # result = run_get_all(True, range(test_year - 4, test_year), [today.strftime("%B")])
-    # print(result)
     print(get_most_recent())

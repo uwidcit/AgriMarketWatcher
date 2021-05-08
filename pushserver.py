@@ -1,9 +1,9 @@
 import datetime
-
 import fcm
 import fetcher
-import fisheries
+from app_util import is_production
 from log_configuration import logger
+from fetch_fish import get_most_recent_fish
 from models import (
     get_most_recent_monthly,
     get_most_recent_daily,
@@ -198,7 +198,7 @@ def run(notify=True):
     try:
         # Attempt to retrieve Fishing Information
         logger.info("Requesting fish data on {0}".format(date_now))
-        current_fish_records = fisheries.getMostRecentFish()
+        current_fish_records = get_most_recent_fish()
         if current_fish_records:
             logger.info(
                 "Successfully retrieved {} fish records".format(
@@ -217,9 +217,9 @@ def run(notify=True):
 
 
 if __name__ == "__main__":
-    results = run(notify=False)
-    print("Retrieved:")
-    #
-    # from pprint import pprint
-    #
-    # pprint(results)
+    is_prod = is_production()
+    print(f"Attempting to retrieve information with push service. In Prod?: {is_prod}")
+    results = run(notify=is_production())
+    from pprint import pprint
+
+    pprint(results)

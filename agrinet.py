@@ -8,7 +8,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, desc, asc
 
 from app_util import crossdomain, process_results
-from fisheries import fisheries_file
 
 app = Flask(__name__)
 FlaskJSON(app)
@@ -18,9 +17,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db = SQLAlchemy(app)
 
-app.register_blueprint(
-    fisheries_file
-)  # Add the fisheries related functionality to file
 # Detect If Running in Development mode or on server
 app.debug = False if "ENV" in os.environ else True
 
@@ -356,9 +352,54 @@ def monthly_crop_commodity(commodity=None):
 def fetch_latest():
     from pushserver import run
 
-    return run()
+    return run(notify=False)
+
+
+@app.route("/fishes")
+@crossdomain(origin="*")
+@as_json
+def fish_list():
+    from models import get_distinct_fish_commodity
+
+    return get_distinct_fish_commodity()
+
+
+@app.route("/fishes/daily/recent")  # Returns the daily prices of the most recent entry
+@app.route(
+    "/fishes/daily/recent/<fish>"
+)  # Returns the most recent daily price of the specified comodity
+@crossdomain(origin="*")
+@as_json
+def most_recent_daily_fish_merged(fish=None):
+    from models import get_most_recent_daily_fish, get_daily_recent_by_commodity_fish
+
+    if fish:  # If we have a crop that we want to obtain
+        res = get_daily_recent_by_commodity_fish(fish)  # TODO - fails unique constraint
+        if not res:
+            return None, 404
+        fishes = [res]
+    else:
+        fishes = get_most_recent_daily_fish()
+    return process_results(fishes)
+
+
+@app.route("/fishes/markets")
+@crossdomain(origin="*")
+@as_json
+def market_list():
+    return [
+        {"name": "Port of Spain Fish Market", "code": "POSWFM"},
+        {"name": "Orange Valley Fish Market", "code": "OVWFM"},
+    ]
+
+
+@app.route("/fishes/daily/recent/market/<market>")
+@crossdomain(origin="*")
+@as_json
+def most_recent_daily_fish_by_market(market):
+    return []
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, threaded=True)

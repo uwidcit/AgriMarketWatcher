@@ -1,9 +1,8 @@
 # Send to single device.
 from pyfcm import FCMNotification
-from firebase import firebase
 
 # Your api-key can be gotten from:  https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
-Firebase = firebase.FirebaseApplication("https://agriprice-6638d.firebaseio.com/")
+# Firebase = firebase.FirebaseApplication("https://agriprice-6638d.firebaseio.com/")
 push_service = FCMNotification(
     api_key="AAAAJkFqwS4:APA91bE0jE8QTQbQ_3YlnkJSmxpjzS9UmhdpSB6xBAKCl69IgPmoTM8RDsinAXtEzWl1YLnFuN9CYzilDjG219ta3eqTHWa2hfwhh-qfWAt7X-VfsABv__ijIJtVbW4lRHZZUu1g_Zb_"
 )
