@@ -13,7 +13,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="agrimarketwatcher",
-    version="0.4.0",
+    version="0.4.1",
     long_description=README + "\n\n" + CHANGES,
     author="Kyle De Freitas",
     author_email="kyle.e.defreitas@gmail.com",

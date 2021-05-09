@@ -13,15 +13,84 @@ def test_fetcher_get_most_recent():
     assert len(results["daily"]) > 0
 
 
-def test_fetch_fish_getMostRecentFish():
+def test_fetch_fish_get_most_recent_fish():
     from fetch_fish import get_most_recent_fish
 
     results = get_most_recent_fish()
     assert len(results) > 0
 
 
-def test_pushserver_run():
+def test_pushserver_run_gets_crop_and_fish_and_updates_db():
+    import agrinet
+
+    agrinet.app.config["TESTING"] = True
+    agrinet.db.create_all()
+
     from pushserver import run
 
     results = run(notify=False)
     assert "crops" in results and "fish" in results
+    assert len(results["crops"]) > 0, "No crops returned from the run"
+    assert len(results["fish"]) > 0, "No crops returned from the run"
+
+    from models import (
+        get_most_recent_daily,
+        get_most_recent_daily_fish,
+        get_daily,
+        get_most_recent_monthly,
+        get_monthly,
+    )
+
+    crop_recent_records = get_most_recent_daily()
+    assert len(crop_recent_records) > 0, "No recent crops found"
+
+    crops_daily_records = get_daily()
+    assert len(crops_daily_records) > 0, "No daily crops found"
+
+    crop_recent_monthly_records = get_most_recent_monthly()
+    assert len(crop_recent_monthly_records) > 0, "No recent monthly crops found"
+
+    crops_monthly_records = get_monthly()
+    assert len(crops_monthly_records) > 0, "No monthly crops found"
+
+    fish_recent_records = get_most_recent_daily_fish()
+    assert len(fish_recent_records) > 0, "no recent fish found"
+
+
+def _endpoint_helper(client, endpoint, name):
+    res = client.get(endpoint)
+    assert res.status_code == 200, f"Unable to retrieve {name}"
+    assert len(res.json) > 0, f"Invalid number of {name} received"
+
+
+def test_crop_endpoints():
+    from agrinet import app
+
+    client = app.test_client()
+
+    _endpoint_helper(client, endpoint="/crops/categories", name="crop categories")
+    _endpoint_helper(client, endpoint="/crops/daily", name="daily crops")
+    _endpoint_helper(client, endpoint="/crops/daily/dates", name="daily crop dates")
+    _endpoint_helper(client, endpoint="/crops/daily/recent", name="recent daily crops")
+    _endpoint_helper(
+        client, endpoint="/crops/daily/category", name="daily crop categories"
+    )
+
+    _endpoint_helper(client, endpoint="/crops/monthly", name="monthly crops")
+    _endpoint_helper(client, endpoint="/crops/monthly/dates", name="monthly crop dates")
+    _endpoint_helper(
+        client, endpoint="/crops/monthly/category", name="monthly crop categories"
+    )
+    # _crop_endpoint_helper(
+    #     client, endpoint="/crops/monthly/commodity", name="monthly crop commodities"
+    # )
+
+
+def test_fish_endpoints():
+    from agrinet import app
+
+    client = app.test_client()
+
+    _endpoint_helper(client, endpoint="/fishes", name="fish names")
+    _endpoint_helper(client, endpoint="/fishes/daily/recent", name="daily recent fish")
+    _endpoint_helper(client, endpoint="/fishes/markets", name="fish markets")

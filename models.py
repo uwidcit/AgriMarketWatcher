@@ -251,7 +251,7 @@ def store_monthly(records):
             db.session.commit()
             length = len(records)
     except Exception as e:
-        logger.error(e)
+        logger.critical(e, exc_info=True)
         db.session.rollback()
     return length
 
@@ -274,7 +274,7 @@ def store_daily(records):
             db.session.commit()
             length = len(records)
     except Exception as e:
-        logger.error(e)  # TODO Raise sentry error
+        logger.critical(e, exc_info=True)  # TODO Raise sentry error
         db.session.rollback()
     return length
 
@@ -341,7 +341,7 @@ def store_most_recent_monthly(recent_records):
             db.session.commit()
             length = len(recent_records)
     except Exception as e:
-        logger.error(e)  # TODO Raise sentry error
+        logger.critical(e, exc_info=True)  # TODO Raise sentry error
         db.session.rollback()
     return length
 
@@ -352,6 +352,14 @@ def get_most_recent_monthly():
 
 def get_most_recent_daily():
     return db.session.query(DailyCropsRecent).all()
+
+
+def get_daily():
+    return db.session.query(DailyCrops).all()
+
+
+def get_monthly():
+    return db.session.query(MonthlyCrops).all()
 
 
 # ***** FISH ****
