@@ -23,10 +23,11 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f test_requirements.txt ]; then pip install -r test_requirements.txt; fi
+          pip install pytest-cov
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --show-source --statistics
       - name: Test with pytest
         run: |
-          pytest -vvv tests.py
+          pytest -vvv tests.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
