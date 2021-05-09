@@ -70,20 +70,14 @@ def test_crop_endpoints():
 
     _endpoint_helper(client, endpoint="/crops/categories", name="crop categories")
     _endpoint_helper(client, endpoint="/crops/daily", name="daily crops")
-    _endpoint_helper(
-        client, endpoint="/crops/daily/dates", name="daily crop dates"
-    )
-    _endpoint_helper(
-        client, endpoint="/crops/daily/recent", name="recent daily crops"
-    )
+    _endpoint_helper(client, endpoint="/crops/daily/dates", name="daily crop dates")
+    _endpoint_helper(client, endpoint="/crops/daily/recent", name="recent daily crops")
     _endpoint_helper(
         client, endpoint="/crops/daily/category", name="daily crop categories"
     )
 
     _endpoint_helper(client, endpoint="/crops/monthly", name="monthly crops")
-    _endpoint_helper(
-        client, endpoint="/crops/monthly/dates", name="monthly crop dates"
-    )
+    _endpoint_helper(client, endpoint="/crops/monthly/dates", name="monthly crop dates")
     _endpoint_helper(
         client, endpoint="/crops/monthly/category", name="monthly crop categories"
     )
