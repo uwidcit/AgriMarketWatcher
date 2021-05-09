@@ -78,34 +78,64 @@ def notify_if_daily_fish_difference(prev_rec, curr_rec):
 
 def handle_difference(previous_recs, current_recs, record_type="daily", notify=False):
     try:
-        if previous_recs is not None and current_recs is not None:
+        if previous_recs and current_recs:
             previous_date = previous_recs[0].date.ctime()
             current_date = current_recs[0]["date"].ctime()
             logger.info(
-                "Previous: {0} /t Current: {1}".format(previous_date, current_date)
+                f"{record_type} - Previous: {previous_date} /t Current: {current_date}"
             )
             if previous_date != current_date:
+                logger.info(f"we have updated {record_type} crop information")
                 if record_type == "daily":
-                    store_most_recent_daily(current_recs)
-                    store_daily(current_recs)
-                    for prev_rec in previous_recs:
-                        for curr_rec in current_recs:
-                            if prev_rec.commodity == curr_rec["commodity"]:
-                                if curr_rec["price"] > 0:
-                                    if notify:
-                                        notify_if_daily_crop_price_difference(
-                                            prev_rec, curr_rec
-                                        )
-
-                if record_type == "monthly":
-                    store_most_recent_monthly(current_recs)
-                    store_monthly(current_recs)
+                    _update_daily_crop_records(current_recs)
+                    _check_for_notify(previous_recs, current_recs, notify)
+                elif record_type == "monthly":
+                    _update_monthly_crop_records(current_recs)
+                else:
+                    logger.info(f"Invalid record type: {record_type}")
             else:
                 logger.info("no new record found")
+        elif current_recs:
+            logger.info(
+                "We do not have any previous records. Storing all current records"
+            )
+            if record_type == "daily":
+                _update_daily_crop_records(current_recs)
+            elif record_type == "monthly":
+                _update_monthly_crop_records(current_recs)
         else:
-            logger.info("Doesn't exist")
+            logger.info("Neither previous or current records received")
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=True)
+
+
+def _update_monthly_crop_records(current_recs):
+    logger.info("Attempting to store recent month records")
+    records_stored = store_most_recent_monthly(current_recs)
+    logger.info(f"Stored {records_stored} recent monthly records")
+
+    logger.info("Attempting to store month records")
+    records_stored = store_monthly(current_recs)
+    logger.info(f"Stored {records_stored} monthly records")
+
+
+def _update_daily_crop_records(current_recs):
+    logger.info("Attempting to store recent daily records")
+    records_stored = store_most_recent_daily(current_recs)
+    logger.info(f"Stored {records_stored} recent daily records")
+
+    logger.info("Attempting to store recent daily records")
+    records_stored = store_daily(current_recs)
+    logger.info(f"Stored {records_stored} recent daily records")
+
+
+def _check_for_notify(previous_recs, current_recs, notify):
+    for prev_rec in previous_recs:
+        for curr_rec in current_recs:
+            if prev_rec.commodity == curr_rec["commodity"]:
+                if curr_rec["price"] > 0:
+                    if notify:
+                        notify_if_daily_crop_price_difference(prev_rec, curr_rec)
 
 
 def handle_difference_fish(

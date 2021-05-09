@@ -296,7 +296,7 @@ def monthly_crops(date=None):
     return []
 
 
-@app.route("/crops/monthly/category/")
+@app.route("/crops/monthly/category")
 @app.route("/crops/monthly/category/<category>")
 @crossdomain(origin="*")
 @as_json
@@ -317,7 +317,7 @@ def monthly_crop_category(category=None):
     return res
 
 
-@app.route("/crops/monthly/commodity/")
+@app.route("/crops/monthly/commodity")
 @app.route("/crops/monthly/commodity/<commodity>")
 @crossdomain(origin="*")
 @as_json
