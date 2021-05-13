@@ -13,6 +13,10 @@ app = Flask(__name__)
 FlaskJSON(app)
 
 SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///agrimarketwatcher.db")
+
+if "postgres://" in SQLALCHEMY_DATABASE_URI:
+    SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://")
+
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db = SQLAlchemy(app)
