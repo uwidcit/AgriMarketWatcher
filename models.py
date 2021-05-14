@@ -31,7 +31,12 @@ class DailyCrops(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"], record["category"], record["unit"])
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        category = record["category"]
+        category = category.decode() if isinstance(category, bytes) else category
+
+        instance = cls(commodity, category, record["unit"])
         instance.volume = (
             record["volume"] if isinstance(record["volume"], float) else 0.0
         )
@@ -94,9 +99,13 @@ class MonthlyCrops(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"])
-        instance.category = record["category"]
-        instance.unit = record["unit"]
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        category = record["category"]
+        category = category.decode() if isinstance(category, bytes) else category
+
+        instance = cls(commodity, category, record["unit"])
+
         instance.min = record["min"] if isinstance(record["min"], float) else 0.0
         instance.max = record["max"] if isinstance(record["max"], float) else 0.0
         instance.mode = record["mode"] if isinstance(record["mode"], float) else 0.0
@@ -157,9 +166,15 @@ class DailyCropsRecent(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"])
-        instance.category = record["category"]
-        instance.unit = record["unit"]
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        category = record["category"]
+        category = category.decode() if isinstance(category, bytes) else category
+        unit = record["unit"]
+        unit = unit.decode() if isinstance(unit, bytes) else unit
+
+        instance = cls(commodity=commodity, category=category, unit=unit)
+
         instance.volume = (
             record["volume"] if isinstance(record["volume"], float) else 0.0
         )
@@ -214,9 +229,15 @@ class MonthlyCropsRecent(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"])
-        instance.category = record["category"]
-        instance.unit = record["unit"]
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        category = record["category"]
+        category = category.decode() if isinstance(category, bytes) else category
+        unit = record["unit"]
+        unit = unit.decode() if isinstance(unit, bytes) else unit
+
+        instance = cls(commodity=commodity, category=category, unit=unit)
+
         instance.min = record["min"] if isinstance(record["min"], float) else 0.0
         instance.max = record["max"] if isinstance(record["max"], float) else 0.0
         instance.mode = record["mode"] if isinstance(record["mode"], float) else 0.0
@@ -408,8 +429,13 @@ class DailyFish(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"])
-        instance.unit = record["unit"]
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        unit = record["unit"]
+        unit = unit.decode() if isinstance(unit, bytes) else unit
+
+        instance = cls(commodity=commodity, unit=unit)
+
         instance.volume = (
             record["volume"] if isinstance(record["volume"], float) else 0.0
         )
@@ -486,8 +512,13 @@ class DailyFishRecent(db.Model):
 
     @classmethod
     def from_dict(cls, record):
-        instance = cls(record["commodity"])
-        instance.unit = record["unit"]
+        commodity = record["commodity"]
+        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
+        unit = record["unit"]
+        unit = unit.decode() if isinstance(unit, bytes) else unit
+
+        instance = cls(commodity=commodity, unit=unit)
+
         instance.volume = (
             record["volume"] if isinstance(record["volume"], float) else 0.0
         )
