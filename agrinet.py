@@ -138,7 +138,7 @@ def crops_id(cid=None):
 @as_json
 def daily_dates_list(date=None):
     """returns all the daily dates available or returns the commodities for the date specified"""
-    from models import DailyCrops
+    from models import DailyCrops, DailyCropsRecent
 
     res = []
 
@@ -167,9 +167,9 @@ def daily_dates_list(date=None):
             return process_results(query_results)
         else:
             records = (
-                db.session.query(DailyCrops.date)
+                db.session.query(DailyCropsRecent.date)
                 .distinct()
-                .order_by(asc(DailyCrops.date))
+                .order_by(asc(DailyCropsRecent.date))
                 .limit(limit)
                 .offset(offset)
                 .all()
