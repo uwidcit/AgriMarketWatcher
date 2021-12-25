@@ -30,7 +30,8 @@ def test_fetch_fish_get_most_recent_fish():
     results = get_most_recent_fish()
     assert len(results) > 0
 
-@patch('pyfcm.FCMNotification')
+
+@patch("pyfcm.FCMNotification")
 def test_pushserver_run_gets_crop_and_fish_and_updates_db_daily(mock_fcm_notification):
     import agrinet
 
@@ -63,7 +64,7 @@ def test_pushserver_run_gets_crop_and_fish_and_updates_db_daily(mock_fcm_notific
 
 
 @pytest.mark.skip(reason="Monthly is outdated skipping until prioritized by NAMDEVCO")
-@patch('pyfcm.FCMNotification')
+@patch("pyfcm.FCMNotification")
 def test_pushserver_run_gets_crop_and_updates_db_monthly(mock_fcm_notification):
     import agrinet
 
@@ -109,6 +110,7 @@ def test_crop_daily_endpoints():
         client, endpoint="/crops/daily/category", name="daily crop categories"
     )
 
+
 @pytest.mark.skip(reason="Monthly is outdated skipping until prioritized by NAMDEVCO")
 def test_crop_monthly_endpoints():
     from agrinet import app
@@ -123,6 +125,7 @@ def test_crop_monthly_endpoints():
     _endpoint_helper(
         client, endpoint="/crops/monthly/commodity", name="monthly crop commodities"
     )
+
 
 def test_fish_endpoints():
     from agrinet import app
