@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "agrimarketwatcher"
+version = "0.1.0"
+description = "backend to read and store commodity prices for namistt website"
+authors = ["Kyle De Freitas <kyle.e.defreitas@gmail.com>"]
+readme = "README.md"
+license = "GPLv3"
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+flask = "^2.2.2"
+redis = "^4.4.2"
+flask-redis = "^0.4.0"
+sentry-sdk = "^1.13.0"
+xlrd = "^2.0.1"
+python-dateutil = "^2.8.2"
+requests = "^2.28.2"
+gunicorn = "^20.1.0"
+blinker = "^1.5"
+pyfcm = "^1.5.4"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+pytest = "^7.2.1"
+jupyter = "^1.0.0"
+flake8 = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
