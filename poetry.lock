@@ -636,6 +636,21 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-json"
+version = "0.3.5"
+description = "Better JSON support for Flask"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Flask-JSON-0.3.5.tar.gz", hash = "sha256:b641a2125cb6984e7eafc921c9bf70c214ea4faff9a0bb1a75a4ec5749f3e67c"},
+    {file = "Flask_JSON-0.3.5-py3-none-any.whl", hash = "sha256:0701576a2ddb78eb11fd74c143871e01205537c4a83dbc81cd3796ca68627f86"},
+]
+
+[package.dependencies]
+Flask = ">=0.10"
+
+[[package]]
 name = "flask-redis"
 version = "0.4.0"
 description = "A nice way to use Redis in your Flask app"
@@ -1234,6 +1249,17 @@ python-versions = "*"
 files = [
     {file = "mistune-2.0.4-py2.py3-none-any.whl", hash = "sha256:182cc5ee6f8ed1b807de6b7bb50155df7b66495412836b9a74c8fbdfc75fe36d"},
     {file = "mistune-2.0.4.tar.gz", hash = "sha256:9ee0a66053e2267aba772c71e06891fa8f1af6d4b01d5e84e267b4570d4d9808"},
+]
+
+[[package]]
+name = "mockredis"
+version = "0.1.3dev"
+description = "A mock redis object."
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "mockredis-0.1.3dev.tar.gz", hash = "sha256:fa780c203588ee898c1aa13ed6f7283861560300a95d8800bc9a2679ba9cb9ee"},
 ]
 
 [[package]]
@@ -2459,4 +2485,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "456e3d6066d227a0e7ec1ede7b05000c39b17cbbfa368e05871cded7c03d0ac1"
+content-hash = "6a789164da0dbdd85a10e754ccb652fee399041712549d88a0e6aaf121ccef03"

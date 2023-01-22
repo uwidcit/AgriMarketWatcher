@@ -1,602 +1,152 @@
 import datetime
-from sqlalchemy import DateTime
 from log_configuration import logger
-from agrinet import db
+from agrinet import redis_client
+import json
 
 
-class DailyCrops(db.Model):
-    __tablename__ = "daily_crops"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, nullable=False)
-    category = db.Column(db.String)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-    price = db.Column(db.REAL)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self, commodity, category="", unit="kg", record_date=None, volume=0.0, price=0.0
-    ):
-        self.commodity = commodity
-        self.category = category
-        self.unit = unit
-        self.volume = volume
-        self.price = price
-        self.date = record_date
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        category = record["category"]
-        category = category.decode() if isinstance(category, bytes) else category
-
-        instance = cls(commodity, category, record["unit"])
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-        instance.price = record["price"] if isinstance(record["price"], float) else 0.0
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        dict_rep["last_updated"] = dict_rep["last_updated"].strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )
-        return dict_rep
+CROP_DAILY_KEY = "crop_daily"
+CROP_MONTHLY_KEY = "crop_monthly"
+CROP_COMMODITY_KEY = "crop_commodity"
+CROP_CATEGORY_KEY = "crop_category"
+FISH_DAILY_KEY = "fish_daily"
+FISH_CATEGORY_KEY = "fish_category"
 
 
-class MonthlyCrops(db.Model):
-    __tablename__ = "monthly_crops"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, nullable=False)
-    category = db.Column(db.String)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-    min = db.Column(db.REAL)
-    max = db.Column(db.REAL)
-    mode = db.Column(db.REAL)
-    mean = db.Column(db.REAL)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self,
-        commodity,
-        category="",
-        unit="kg",
-        record_date=None,
-        volume=0.0,
-        min_val=0.0,
-        max_val=0.0,
-        mode=0.0,
-        mean=0.0,
-    ):
-        self.commodity = commodity
-        self.category = category
-        self.unit = unit
-        self.min = min_val
-        self.max = max_val
-        self.mode = mode
-        self.mean = mean
-        self.volume = volume
-        self.date = record_date
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        category = record["category"]
-        category = category.decode() if isinstance(category, bytes) else category
-
-        instance = cls(commodity, category, record["unit"])
-
-        instance.min = record["min"] if isinstance(record["min"], float) else 0.0
-        instance.max = record["max"] if isinstance(record["max"], float) else 0.0
-        instance.mode = record["mode"] if isinstance(record["mode"], float) else 0.0
-        instance.mean = record["mean"] if isinstance(record["mean"], float) else 0.0
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        dict_rep["last_updated"] = dict_rep["last_updated"].strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )
-        return dict_rep
-
-
-# Needed to re-declare the Recent models as the alembic does not support inheritance
-class DailyCropsRecent(db.Model):
-    __tablename__ = "daily_crops_recent"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, nullable=False)
-    category = db.Column(db.String)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-    price = db.Column(db.REAL)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self, commodity, category="", unit="kg", record_date=None, volume=0.0, price=0.0
-    ):
-        self.commodity = commodity
-        self.category = category
-        self.unit = unit
-        self.volume = volume
-        self.price = price
-        self.date = record_date
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        dict_rep["last_updated"] = dict_rep["last_updated"].strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )
-        return dict_rep
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        category = record["category"]
-        category = category.decode() if isinstance(category, bytes) else category
-        unit = record["unit"]
-        unit = unit.decode() if isinstance(unit, bytes) else unit
-
-        instance = cls(commodity=commodity, category=category, unit=unit)
-
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-        instance.price = record["price"] if isinstance(record["price"], float) else 0.0
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-
-class MonthlyCropsRecent(db.Model):
-    __tablename__ = "monthly_crops_recent"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, unique=True, nullable=False)
-    category = db.Column(db.String)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-    min = db.Column(db.REAL)
-    max = db.Column(db.REAL)
-    mode = db.Column(db.REAL)
-    mean = db.Column(db.REAL)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self,
-        commodity,
-        category="",
-        unit="kg",
-        record_date=None,
-        volume=0.0,
-        min_val=0.0,
-        max_val=0.0,
-        mode=0.0,
-        mean=0.0,
-    ):
-        self.commodity = commodity
-        self.category = category
-        self.unit = unit
-        self.min = min_val
-        self.max = max_val
-        self.mode = mode
-        self.mean = mean
-        self.volume = volume
-        self.date = record_date
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        category = record["category"]
-        category = category.decode() if isinstance(category, bytes) else category
-        unit = record["unit"]
-        unit = unit.decode() if isinstance(unit, bytes) else unit
-
-        instance = cls(commodity=commodity, category=category, unit=unit)
-
-        instance.min = record["min"] if isinstance(record["min"], float) else 0.0
-        instance.max = record["max"] if isinstance(record["max"], float) else 0.0
-        instance.mode = record["mode"] if isinstance(record["mode"], float) else 0.0
-        instance.mean = record["mean"] if isinstance(record["mean"], float) else 0.0
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        dict_rep["last_updated"] = dict_rep["last_updated"].strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )
-        return dict_rep
-
-
-def store_monthly(records):
-    length = 0
-    try:
-        if records and len(records) > 0:
-            for in_record in records:
-                db_rec = MonthlyCrops.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(records)
-    except Exception as e:
-        logger.critical(e, exc_info=True)
-        db.session.rollback()
-    return length
-
-
-def get_monthly_by_id(rec_id):
-    return db.session.query(MonthlyCrops).get(rec_id)
-
-
-def get_daily_by_id(rec_id):
-    return db.session.query(DailyCrops).get(rec_id)
+def delete_crop_records():
+    redis_client.delete(CROP_DAILY_KEY, CROP_COMMODITY_KEY, CROP_CATEGORY_KEY)
 
 
 def store_daily(records):
-    length = 0
-    try:
-        if records:
-            for in_record in records:
-                db_rec = DailyCrops.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(records)
-    except Exception as e:
-        logger.critical(e, exc_info=True)  # TODO Raise sentry error
-        db.session.rollback()
-    return length
+    logger.info("No longer supports anything else by the latest records")
+    store_most_recent_daily(records)
 
 
-def store_most_recent_daily(recent_records):
-    length = 0
+def store_most_recent_daily(
+    crop_records: list[dict],
+    crop_daily_key: str = CROP_DAILY_KEY,
+    crop_commodity_key: str = CROP_COMMODITY_KEY,
+    crop_category_key: str = CROP_CATEGORY_KEY,
+) -> dict:
     try:
-        if recent_records and len(recent_records) > 0:
-            # drop all the records in the table
-            num_rows_deleted = db.session.query(DailyCropsRecent).delete()
-            logger.info(
-                "Deleted {0} records from the Daily Crops Recent table".format(
-                    num_rows_deleted
-                )
-            )
-            for in_record in recent_records:
-                db_rec = DailyCropsRecent.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(recent_records)
+        # Not an atomic operation. Failure at any point will leave data inconsistent
+        return {
+            "crops": store_daily_crops(crop_records, crop_daily_key),
+            "category": store_daily_category(crop_records, crop_category_key),
+            "commodity": store_daily_commodity(crop_records, crop_commodity_key),
+        }
     except Exception as e:
         logger.critical(e, exc_info=True)
-        db.session.rollback()
-    return length
+    return {}
 
 
-def get_distinct_commodity():
-    commodities = list(db.session.query(DailyCropsRecent.commodity).distinct())
-    return [commodity[0] for commodity in commodities]
+def store_daily_crops(crop_records: list, crop_daily_key: str = CROP_DAILY_KEY) -> int:
+    for crop in crop_records:
+        crop["date"] = str(crop["date"])
+    redis_client.set(crop_daily_key, json.dumps(crop_records))
+    return len(crop_records)
 
 
-def get_distinct_categories():
-    categories = list(db.session.query(DailyCropsRecent.category).distinct())
-    return [category[0] for category in categories]
+def store_daily_commodity(
+    crop_records: list, crop_commodity_key: str = CROP_COMMODITY_KEY
+) -> int:
+    commodities = list({crop["commodity"] for crop in crop_records})
+    redis_client.set(crop_commodity_key, json.dumps(commodities))
+    return len(commodities)
+
+
+def get_most_recent_daily(crop_daily_key: str = CROP_DAILY_KEY):
+    commodities_str = redis_client.get(crop_daily_key)
+    return json.loads(commodities_str or "[]")
+
+
+def get_daily_by_id(rec_id):
+    daily_crops = get_most_recent_daily()
+    return daily_crops[rec_id]
+
+
+def store_daily_category(
+    crop_records: list, crop_category_key: str = CROP_CATEGORY_KEY
+) -> int:
+    categories = list({crop["category"] for crop in crop_records})
+    redis_client.set(crop_category_key, json.dumps(categories))
+    return len(categories)
+
+
+def get_distinct_commodity(crop_commodity_key: str = CROP_COMMODITY_KEY) -> list[str]:
+    commodities_str = redis_client.get(crop_commodity_key)
+    return json.loads(commodities_str or "[]")
+
+
+def get_distinct_categories(crop_category_key: str = CROP_CATEGORY_KEY) -> list[str]:
+    categories_str = redis_client.get(crop_category_key)
+    return json.loads(categories_str or "[]")
 
 
 def get_distinct_commodity_by_category(category):
-    commodities = (
-        db.session.query(DailyCropsRecent)
-        .filter(DailyCropsRecent.category == category)
-        .distinct(DailyCropsRecent.commodity)
-    )
-    return [rec.commodity for rec in commodities]
+    daily_crops = get_most_recent_daily()
+    return [crop for crop in daily_crops if crop["category"] == category.lower()]
 
 
 def get_daily_recent_by_commodity(commodity):
-    return db.session.query(DailyCropsRecent.commodity == commodity).one()
+    daily_crops = get_most_recent_daily()
+    return [crop for crop in daily_crops if crop["commodity"] == commodity.lower()]
 
 
-def store_most_recent_monthly(recent_records):
-    length = 0
-    try:
-        if recent_records and len(recent_records) > 0:
-            # drop all the records in the table
-            num_rows_deleted = db.session.query(MonthlyCropsRecent).delete()
-            logger.info(
-                "Deleted {0} records from the Monthly Crops Recent table".format(
-                    num_rows_deleted
-                )
-            )
-            for in_record in recent_records:
-                db_rec = MonthlyCropsRecent.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(recent_records)
-    except Exception as e:
-        logger.critical(e, exc_info=True)  # TODO Raise sentry error
-        db.session.rollback()
-    return length
+def store_monthly(crop_records):
+    return store_most_recent_monthly(crop_records)
+
+
+def store_most_recent_monthly(recent_crop_records):
+    for crop in recent_crop_records:
+        crop["date"] = str(crop["date"])
+    redis_client.set(CROP_MONTHLY_KEY, json.dumps(recent_crop_records))
+    return len(recent_crop_records)
 
 
 def get_most_recent_monthly():
-    return db.session.query(MonthlyCropsRecent).all()
+    commodities_str = redis_client.get(CROP_MONTHLY_KEY)
+    return json.loads(commodities_str or "[]")
 
 
-def get_most_recent_daily():
-    return db.session.query(DailyCropsRecent).all()
+def get_monthly_by_id(rec_id):
+    monthly_crops = get_most_recent_monthly()
+    return monthly_crops[rec_id]
 
 
 def get_daily():
-    return db.session.query(DailyCrops).all()
+    return get_most_recent_daily()
 
 
 def get_monthly():
-    return db.session.query(MonthlyCrops).all()
+    return get_most_recent_monthly()
 
 
 # ***** FISH ****
 
 
-class DailyFish(db.Model):
-    __tablename__ = "daily_fish"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, nullable=False)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-
-    min_price = db.Column(db.REAL)
-    max_price = db.Column(db.REAL)
-    frequent_price = db.Column(db.REAL)
-    average_price = db.Column(db.REAL)
-    market = db.Column(db.String)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self,
-        commodity,
-        unit="kg",
-        record_date=None,
-        volume=0.0,
-        min_price=0.0,
-        max_price=0.0,
-        frequent_price=0.0,
-        average_price=0.0,
-        market=0.0,
-    ):
-        self.commodity = commodity
-        self.unit = unit
-        self.volume = volume
-        self.min_price = min_price
-        self.max_price = max_price
-        self.frequent_price = frequent_price
-        self.average_price = average_price
-        self.market = market
-        self.date = record_date
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        unit = record["unit"]
-        unit = unit.decode() if isinstance(unit, bytes) else unit
-
-        instance = cls(commodity=commodity, unit=unit)
-
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-        instance.min_price = (
-            record["min_price"] if isinstance(record["min_price"], float) else 0.0
-        )
-        instance.max_price = (
-            record["max_price"] if isinstance(record["max_price"], float) else 0.0
-        )
-        instance.frequent_price = (
-            record["frequent_price"]
-            if isinstance(record["frequent_price"], float)
-            else 0.0
-        )
-        instance.average_price = (
-            record["average_price"]
-            if isinstance(record["average_price"], float)
-            else 0.0
-        )
-        instance.market = record["market"]
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        return dict_rep
-
-
-class DailyFishRecent(db.Model):
-    __tablename__ = "daily_fish_recent"
-
-    id = db.Column(db.Integer, primary_key=True)
-    commodity = db.Column(db.String, nullable=False)
-    unit = db.Column(db.String)
-    volume = db.Column(db.REAL)
-
-    min_price = db.Column(db.REAL)
-    max_price = db.Column(db.REAL)
-    frequent_price = db.Column(db.REAL)
-    average_price = db.Column(db.REAL)
-    market = db.Column(db.String)
-
-    date = db.Column(DateTime, nullable=False, default=datetime.datetime.now)
-    last_updated = db.Column(
-        DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now
-    )
-
-    def __init__(
-        self,
-        commodity,
-        unit="kg",
-        record_date=None,
-        volume=0.0,
-        min_price=0.0,
-        max_price=0.0,
-        frequent_price=0.0,
-        average_price=0.0,
-        market=0.0,
-    ):
-        self.commodity = commodity
-        self.unit = unit
-        self.volume = volume
-        self.min_price = min_price
-        self.max_price = max_price
-        self.frequent_price = frequent_price
-        self.average_price = average_price
-        self.market = market
-        self.date = record_date
-
-    @classmethod
-    def from_dict(cls, record):
-        commodity = record["commodity"]
-        commodity = commodity.decode() if isinstance(commodity, bytes) else commodity
-        unit = record["unit"]
-        unit = unit.decode() if isinstance(unit, bytes) else unit
-
-        instance = cls(commodity=commodity, unit=unit)
-
-        instance.volume = (
-            record["volume"] if isinstance(record["volume"], float) else 0.0
-        )
-        instance.min_price = (
-            record["min_price"] if isinstance(record["min_price"], float) else 0.0
-        )
-        instance.max_price = (
-            record["max_price"] if isinstance(record["max_price"], float) else 0.0
-        )
-        instance.frequent_price = (
-            record["frequent_price"]
-            if isinstance(record["frequent_price"], float)
-            else 0.0
-        )
-        instance.average_price = (
-            record["average_price"]
-            if isinstance(record["average_price"], float)
-            else 0.0
-        )
-        instance.market = record["market"]
-        instance.date = record["date"]  # TODO verify this is correct
-
-        if "id" in record:
-            instance.id = record["id"]
-
-        return instance
-
-    def as_dict(self):
-        dict_rep = {col.name: getattr(self, col.name) for col in self.__table__.columns}
-        dict_rep["date"] = dict_rep["date"].strftime("%Y-%m-%dT%H:%M:%S")
-        return dict_rep
-
-
 def get_distinct_fish_commodity():
-    commodities = list(db.session.query(DailyFishRecent.commodity).distinct())
-    return [commodity[0] for commodity in commodities]
+    commodities = get_most_recent_daily_fish()
+    return list({commodity["commodity"] for commodity in commodities})
 
 
 def get_most_recent_daily_fish():
-    return db.session.query(DailyFishRecent).all()
+    commodities_str = redis_client.get(FISH_DAILY_KEY)
+    return json.loads(commodities_str or "[]")
 
 
 def store_daily_fish(records):
-    length = 0
-    try:
-        if records:
-            for in_record in records:
-                db_rec = DailyFish.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(records)
-    except Exception as e:
-        logger.critical(e, exc_info=True)
-        db.session.rollback()
-    return length
+    return store_most_recent_daily_fish(records)
 
 
 def store_most_recent_daily_fish(recent_records):
-    length = 0
-    try:
-        if recent_records and len(recent_records) > 0:
-            # drop all the records in the table
-            num_rows_deleted = db.session.query(DailyFishRecent).delete()
-            logger.info(
-                "Deleted {0} records from the Daily Fish Recent table".format(
-                    num_rows_deleted
-                )
-            )
-            for in_record in recent_records:
-                db_rec = DailyFishRecent.from_dict(in_record)
-                db.session.add(db_rec)
-            db.session.commit()
-            length = len(recent_records)
-    except Exception as e:
-        logger.critical(e, exc_info=True)
-        db.session.rollback()
-    return length
+    redis_client.set(FISH_DAILY_KEY, json.dumps(recent_records))
+    return len(recent_records)
 
 
 def get_daily_recent_by_commodity_fish(commodity):
-    return db.session.query(DailyFishRecent.commodity == commodity).one()
+    commodities = get_most_recent_daily_fish()
+    return [
+        commodity
+        for commodity in commodities
+        if commodity["commodity"] == commodity.lower()
+    ]

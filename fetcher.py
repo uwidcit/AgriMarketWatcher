@@ -8,8 +8,6 @@ import multiprocessing
 from multiprocessing import Pool
 from log_configuration import logger
 
-from models import store_most_recent_daily, store_most_recent_monthly
-
 default_category = "ROOT CROPS"
 CATEGORIES = [
     "root crops",
@@ -48,9 +46,15 @@ daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily
 
 def process_daily(sheet, row, category):
     dic = {
-        "commodity": sheet.cell_value(row, 0).encode("ascii").lower(),
-        "category": category.encode("ascii"),
-        "unit": sheet.cell_value(row, 1).encode("ascii"),
+        "commodity": sheet.cell_value(row, 0)
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
+        "category": category,
+        "unit": sheet.cell_value(row, 1)
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
         "volume": sheet.cell_value(row, 3),
         "price": sheet.cell_value(row, 6),
     }
@@ -72,9 +76,15 @@ def process_daily(sheet, row, category):
 
 def process_monthly(sheet, row, category):
     dic = {
-        "commodity": sheet.cell_value(row, 0).encode("ascii").lower(),
-        "category": category.encode("ascii"),
-        "unit": str(sheet.cell_value(row, 1)).encode("ascii"),
+        "commodity": sheet.cell_value(row, 0)
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
+        "category": category,
+        "unit": str(sheet.cell_value(row, 1))
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
     }
 
     if sheet.cell(row, 2) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
@@ -114,10 +124,15 @@ def process_row(sheet, row, type):
     else:
         # Check if the second column is empty then usually for the category listing
         if not sheet.cell(row, 1).value:
-            val = sheet.cell(row, 0).value
+            val = (
+                sheet.cell(row, 0)
+                .value.encode(encoding="UTF-8", errors="ignore")
+                .decode()
+                .lower()
+            )
             # Check if in the valid list of categories
-            if val.lower() in CATEGORIES:
-                default_category = val.upper()
+            if val in CATEGORIES:
+                default_category = val
         else:
             if type == "daily":
                 return process_daily(sheet, row, default_category)
@@ -319,6 +334,8 @@ def process_run_get_month(month, year):
 
 
 def run_get_all(store_data, years, months):
+    from models import store_most_recent_daily, store_most_recent_monthly
+
     most_recent_daily = None
     most_recent_monthly = None
     daily = []
@@ -370,4 +387,12 @@ def run_get_all(store_data, years, months):
 
 
 if __name__ == "__main__":
-    print(get_most_recent())
+    import json
+
+    # from pprint import pprint
+
+    records = get_most_recent()
+    # pprint(records)
+    print(json.dumps(records, indent=4, default=str))
+    with open("./data/records.json", "w") as fp:
+        json.dump(obj=records, fp=fp, indent=4, default=str)
