@@ -97,3 +97,10 @@ https://pypa.github.io/pipx/installation/
    poetry install
    ```
 2. Ensure to use the `pyenv local 3.9.16` before starting development in each 
+
+
+### Running the dev environment
+Run redis in the background
+```bash
+docker run --name redis-dev -p 6379:6379 -d redis
+```

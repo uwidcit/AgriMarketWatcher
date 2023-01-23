@@ -1,0 +1,620 @@
+{
+    "daily": [
+        {
+            "commodity": "carrot",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 5897.0,
+            "price": 14.33,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cassava",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 2484.0,
+            "price": 11.11,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "yam (local)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 1361.0,
+            "price": 8.82,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "yam (imported)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 1350.0,
+            "price": 15.43,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "dasheen(local)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 2296.0,
+            "price": 11.11,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "dasheen(imported)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 4050.0,
+            "price": 9.45,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "eddoe (local)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 504.0,
+            "price": 13.89,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "eddoe (imported)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 4050.0,
+            "price": 13.33,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet potato (local)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 1913.0,
+            "price": 17.36,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet potato (imported)",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "ginger",
+            "category": "root crops",
+            "unit": "kg",
+            "volume": 2458.0,
+            "price": 14.33,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "celery",
+            "category": "condiments and spices",
+            "unit": "bndl.",
+            "volume": 540.0,
+            "price": 40.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "chive (l)",
+            "category": "condiments and spices",
+            "unit": "bndl.",
+            "volume": 720.0,
+            "price": 60.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "thyme (s)",
+            "category": "condiments and spices",
+            "unit": "bndl.",
+            "volume": 10.0,
+            "price": 200.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "hot pepper (100's)",
+            "category": "condiments and spices",
+            "unit": "100's",
+            "volume": 40.0,
+            "price": 200.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "hot pepper (40 lb)",
+            "category": "condiments and spices",
+            "unit": "bag",
+            "volume": 83.0,
+            "price": 1800.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "shadon beni",
+            "category": "condiments and spices",
+            "unit": "bndl.",
+            "volume": 3450.0,
+            "price": 10.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pimento (s)",
+            "category": "condiments and spices",
+            "unit": "100's",
+            "volume": 64.0,
+            "price": 100.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pimento (m)",
+            "category": "condiments and spices",
+            "unit": "100's",
+            "volume": 295.0,
+            "price": 120.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pimento (l)",
+            "category": "condiments and spices",
+            "unit": "100's",
+            "volume": 577.0,
+            "price": 150.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lettuce (s)",
+            "category": "leafy vegetables",
+            "unit": "head",
+            "volume": 500.0,
+            "price": 2.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lettuce (m)",
+            "category": "leafy vegetables",
+            "unit": "head",
+            "volume": 1700.0,
+            "price": 3.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lettuce (l)",
+            "category": "leafy vegetables",
+            "unit": "head",
+            "volume": 2250.0,
+            "price": 4.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "patchoi",
+            "category": "leafy vegetables",
+            "unit": "bndl.",
+            "volume": 2710.0,
+            "price": 5.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "spinach (amarantus spp.)",
+            "category": "leafy vegetables",
+            "unit": "bndl.",
+            "volume": 1010.0,
+            "price": 7.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cabbage (imported) (gn)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 2948.0,
+            "price": 14.11,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cabbage(local) (gn)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 1270.0,
+            "price": 15.43,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cabbage (white)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cabbage (imported) (purple)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 1043.0,
+            "price": 12.57,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "callaloo bush (open)",
+            "category": "leafy vegetables",
+            "unit": "bndl.",
+            "volume": 1550.0,
+            "price": 4.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "callaloo bush (roll)",
+            "category": "leafy vegetables",
+            "unit": "bndl.",
+            "volume": 1200.0,
+            "price": 5.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cauliflower(imported)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 227.0,
+            "price": 45.81,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cauliflower (local)",
+            "category": "leafy vegetables",
+            "unit": "kg",
+            "volume": 136.0,
+            "price": 39.68,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "bodi bean",
+            "category": "vegetables",
+            "unit": "5lb bndl.",
+            "volume": 160.0,
+            "price": 65.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "seim bean",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 190.0,
+            "price": 26.46,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pigeon pea",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "cucumber",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 9720.0,
+            "price": 3.33,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "melongene (s)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 590.0,
+            "price": 26.46,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "melongene (m)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 204.0,
+            "price": 30.86,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "melongene (l)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 989.0,
+            "price": 33.07,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "ochro",
+            "category": "vegetables",
+            "unit": "100's",
+            "volume": 363.0,
+            "price": 40.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "plantain (green)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 835.0,
+            "price": 17.64,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "plantain (ripe)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 2313.0,
+            "price": 17.64,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pumpkin",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 11147.0,
+            "price": 17.64,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet pepper (s)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 966.0,
+            "price": 26.46,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet pepper (m)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 2232.0,
+            "price": 33.07,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet pepper (l)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 1855.0,
+            "price": 35.27,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sweet pepper (imported)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "tomato (s)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 2006.0,
+            "price": 24.25,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "tomato (m)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 4103.0,
+            "price": 28.66,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "tomato (l)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 4520.0,
+            "price": 30.86,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "tomato (imported)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 521.0,
+            "price": 24.25,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "caraillie (s)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "caraillie (m)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 145.0,
+            "price": 17.64,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "caraillie (l)",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 1070.0,
+            "price": 19.84,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "squash",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 227.0,
+            "price": 19.84,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "christophene",
+            "category": "vegetables",
+            "unit": "kg",
+            "volume": 680.0,
+            "price": 11.02,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "coconut (dry) (l)",
+            "category": "fruits",
+            "unit": "100's",
+            "volume": 72.0,
+            "price": 600.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "coconut (dry) (m)",
+            "category": "fruits",
+            "unit": "100's",
+            "volume": 12.0,
+            "price": 500.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "coconut (dry) (s)",
+            "category": "fruits",
+            "unit": "100's",
+            "volume": 2.0,
+            "price": 400.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "banana (ripe)",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 4860.0,
+            "price": 13.33,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "banana (green)",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 793.0,
+            "price": 4.41,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "banana (gr.michel)",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "paw paw",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 2948.0,
+            "price": 15.43,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "pineapple",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 10070.0,
+            "price": 9.92,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "watermelon",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 4990.0,
+            "price": 17.64,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "sorrel",
+            "category": "fruits",
+            "unit": "kg",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lime (s)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lime (m)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "lime (l)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 130.0,
+            "price": 220.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "grapefruit",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 36.0,
+            "price": 220.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "orange (s)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 25.0,
+            "price": 140.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "orange (m)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 167.0,
+            "price": 180.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "orange (l)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 134.0,
+            "price": 200.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "orange (navel)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 0.0,
+            "price": 0.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "orange (king)",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 9.0,
+            "price": 350.0,
+            "date": "2023-01-19 00:00:00"
+        },
+        {
+            "commodity": "portugal",
+            "category": "citrus",
+            "unit": "100's",
+            "volume": 51.0,
+            "price": 260.0,
+            "date": "2023-01-19 00:00:00"
+        }
+    ]
+}

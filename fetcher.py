@@ -1,14 +1,11 @@
-import requests
-import xlrd
 import time
 from datetime import datetime
-from xlrd import open_workbook
-from functools import partial
-import multiprocessing
-from multiprocessing import Pool
-from log_configuration import logger
 
-from models import store_most_recent_daily, store_most_recent_monthly
+import requests
+import xlrd
+from xlrd import open_workbook
+
+from log_configuration import logger
 
 default_category = "ROOT CROPS"
 CATEGORIES = [
@@ -48,9 +45,15 @@ daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily
 
 def process_daily(sheet, row, category):
     dic = {
-        "commodity": sheet.cell_value(row, 0).encode("ascii").lower(),
-        "category": category.encode("ascii"),
-        "unit": sheet.cell_value(row, 1).encode("ascii"),
+        "commodity": sheet.cell_value(row, 0)
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
+        "category": category,
+        "unit": sheet.cell_value(row, 1)
+        .encode(encoding="UTF-8", errors="ignore")
+        .decode()
+        .lower(),
         "volume": sheet.cell_value(row, 3),
         "price": sheet.cell_value(row, 6),
     }
@@ -70,41 +73,6 @@ def process_daily(sheet, row, category):
     return dic
 
 
-def process_monthly(sheet, row, category):
-    dic = {
-        "commodity": sheet.cell_value(row, 0).encode("ascii").lower(),
-        "category": category.encode("ascii"),
-        "unit": str(sheet.cell_value(row, 1)).encode("ascii"),
-    }
-
-    if sheet.cell(row, 2) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        dic["min"] = 0.0
-    else:
-        dic["min"] = sheet.cell_value(row, 2)
-
-    if sheet.cell(row, 3) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        dic["max"] = 0.0
-    else:
-        dic["max"] = sheet.cell_value(row, 3)
-
-    if sheet.cell(row, 4) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        dic["mode"] = 0.0
-    else:
-        dic["mode"] = sheet.cell_value(row, 4)
-
-    if sheet.cell(row, 5) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        dic["mean"] = 0.0
-    else:
-        dic["mean"] = sheet.cell_value(row, 5)
-
-    if sheet.cell(row, 6) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-        dic["volume"] = 0.0
-    else:
-        dic["volume"] = sheet.cell_value(row, 6)
-
-    return dic
-
-
 def process_row(sheet, row, type):
     global default_category
     global CATEGORIES
@@ -114,15 +82,20 @@ def process_row(sheet, row, type):
     else:
         # Check if the second column is empty then usually for the category listing
         if not sheet.cell(row, 1).value:
-            val = sheet.cell(row, 0).value
+            val = (
+                sheet.cell(row, 0)
+                .value.encode(encoding="UTF-8", errors="ignore")
+                .decode()
+                .lower()
+            )
             # Check if in the valid list of categories
-            if val.lower() in CATEGORIES:
-                default_category = val.upper()
+            if val in CATEGORIES:
+                default_category = val
         else:
             if type == "daily":
                 return process_daily(sheet, row, default_category)
             else:
-                return process_monthly(sheet, row, default_category)
+                return []
 
 
 def traverse_workbook(url, workbook_type="daily"):
@@ -132,9 +105,7 @@ def traverse_workbook(url, workbook_type="daily"):
         wb = open_workbook(url, file_contents=data)
         for s in wb.sheets():
             for row in range(s.nrows):
-                if (workbook_type == "daily" and row > 10) or (
-                    workbook_type == "monthly" and row > 15
-                ):
+                if workbook_type == "daily" and row > 10:
                     rowData = process_row(s, row, workbook_type)
                     if rowData:
                         values.append(rowData)
@@ -193,25 +164,6 @@ def retrieve_daily(base_url, day, month, year):
     return None
 
 
-def retrieve_monthly(base_url, month, year):
-    if not str(month).isdigit():
-        month = MONTHS.index(month) + 1
-
-    url = get_url(base_url, year, month)
-    if url:
-        result = traverse_workbook(url, "monthly")
-        if result:
-            for x in result:
-                if x:
-                    x.update({"date": datetime(int(year), int(month), 1)})
-            return result
-        else:
-            logger.error("Unable to extract data from the excel file")
-    else:
-        logger.debug("No Monthly report found for: {0}-{1}".format(month, year))
-    return None
-
-
 # Logs sheets that have just been processed into the database
 def log_sheet_as_processed(db, sheet):
     db.processed.insert({"url": sheet})
@@ -234,23 +186,6 @@ def get_most_recent():
             years.append(year_number - 1)
 
         reset_daily = False
-        reset_monthly = False
-
-        # get most recent monthly data
-        m = None
-        for year in years:
-            for month in reversed(months_names):
-                m = retrieve_monthly(base_monthly_url, month, year)
-                if m:
-                    logger.info(
-                        "successfully found {0} monthly prices for {1}-{2}".format(
-                            len(m), month, year
-                        )
-                    )
-                    reset_monthly = True
-                    break
-            if reset_monthly:
-                break
 
         # get most recent daily data
         d = None
@@ -280,7 +215,7 @@ def get_most_recent():
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
-        return {"monthly": m, "daily": d}
+        return {"daily": d}
     except Exception as e:
         logger.error(e)
     finally:
@@ -299,42 +234,15 @@ def process_run_get_day(day, month, year):
     return d
 
 
-def process_run_get_month(month, year):
-    # extract monthly reports
-    logger.info("Attempting to retrieve month {0} and {1}".format(month, year))
-    m = retrieve_monthly(base_monthly_url, month, str(year))
-    if m:
-        logger.info("Data for {0}-{1} was successful".format(month, year))
-    else:
-        logger.error("Data for {0}-{1} was unsuccessful".format(month, year))
-
-    days = range(1, 32)
-    cpu_count = int(multiprocessing.cpu_count() / 2)
-    pool = Pool(processes=cpu_count)
-    all_result = pool.map(partial(process_run_get_day, month=month, year=2020), days)
-    print("Received {0} records".format(len(all_result)))
-    valid_result = [rec for rec in all_result if rec is not None]
-    print("Valid results {0} received".format(len(valid_result)))
-    return m, valid_result
-
-
 def run_get_all(store_data, years, months):
+    from models import store_most_recent_daily
+
     most_recent_daily = None
-    most_recent_monthly = None
     daily = []
-    monthly = []
     reset_daily = False
-    reset_monthly = False
 
     for year in reversed(list(years)):  # TODO Update to not have to set date
         for month in reversed(list(months)):  # extract monthly reports
-            m = retrieve_monthly(base_monthly_url, month, str(year))
-            if m:
-                reset_monthly = True
-                monthly.extend(m)
-                if not most_recent_monthly:
-                    most_recent_monthly = m
-
             # extract daily reports
             for day in range(31, 0, -1):
                 d = retrieve_daily(daily_base_url, str(day), month, str(year))
@@ -352,22 +260,22 @@ def run_get_all(store_data, years, months):
                 logger.info("Retrieving the Most Recent Daily Crops")
                 store_most_recent_daily(most_recent_daily)
 
-            # If we have a new set of monthly data,
-            # we write that to the database
-            if reset_monthly:
-                logger.info("Retrieving the Most Recent Monthly Crops")
-                store_most_recent_monthly(most_recent_monthly)
-
         except Exception as e:
             logger.error(e)
 
     return {
-        "monthly": monthly,
         "daily": daily,
-        "most_recent_monthly": most_recent_monthly,
         "most_recent_daily": most_recent_daily,
     }
 
 
 if __name__ == "__main__":
-    print(get_most_recent())
+    import json
+
+    # from pprint import pprint
+
+    records = get_most_recent()
+    # pprint(records)
+    print(json.dumps(records, indent=4, default=str))
+    with open("./data/records.json", "w") as fp:
+        json.dump(obj=records, fp=fp, indent=4, default=str)

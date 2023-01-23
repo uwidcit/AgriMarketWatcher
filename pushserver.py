@@ -1,19 +1,16 @@
-import datetime
+from datetime import datetime
+
 import fcm
 import fetcher
 from app_util import is_production
 from log_configuration import logger
-from fetch_fish import get_most_recent_fish
 from models import (
-    get_most_recent_monthly,
     get_most_recent_daily,
     get_most_recent_daily_fish,
-    store_most_recent_daily,
-    store_most_recent_daily_fish,
     store_daily,
     store_daily_fish,
-    store_most_recent_monthly,
-    store_monthly,
+    store_most_recent_daily,
+    store_most_recent_daily_fish,
 )
 
 MIN_DIFF = 1.0
@@ -79,20 +76,21 @@ def notify_if_daily_fish_difference(prev_rec, curr_rec):
 def handle_difference(previous_recs, current_recs, record_type="daily", notify=False):
     try:
         if previous_recs and current_recs:
-            previous_date = previous_recs[0].date.ctime()
+            previous_date_str = previous_recs[0]["date"]
+            previous_date = datetime.strptime(
+                previous_date_str, "%Y-%m-%d %H:%M:%S"
+            ).ctime()
             current_date = current_recs[0]["date"].ctime()
-            logger.info(
-                f"{record_type} - Previous: {previous_date} /t Current: {current_date}"
-            )
+            logger.info(f"{record_type}-Prev:{previous_date} Curr:{current_date}")
+
             if previous_date != current_date:
                 logger.info(f"we have updated {record_type} crop information")
+
                 if record_type == "daily":
                     _update_daily_crop_records(current_recs)
                     _check_for_notify(previous_recs, current_recs, notify)
-                elif record_type == "monthly":
-                    _update_monthly_crop_records(current_recs)
                 else:
-                    logger.info(f"Invalid record type: {record_type}")
+                    logger.error(f"Invalid record type: {record_type}")
             else:
                 logger.info("no new record found")
         elif current_recs:
@@ -101,22 +99,12 @@ def handle_difference(previous_recs, current_recs, record_type="daily", notify=F
             )
             if record_type == "daily":
                 _update_daily_crop_records(current_recs)
-            elif record_type == "monthly":
-                _update_monthly_crop_records(current_recs)
+            else:
+                logger.error(f"Invalid record type: {record_type}")
         else:
             logger.info("Neither previous or current records received")
     except Exception as e:
         logger.error(e, exc_info=True)
-
-
-def _update_monthly_crop_records(current_recs):
-    logger.info("Attempting to store recent month records")
-    records_stored = store_most_recent_monthly(current_recs)
-    logger.info(f"Stored {records_stored} recent monthly records")
-
-    logger.info("Attempting to store month records")
-    records_stored = store_monthly(current_recs)
-    logger.info(f"Stored {records_stored} monthly records")
 
 
 def _update_daily_crop_records(current_recs):
@@ -186,11 +174,6 @@ def handle_difference_fish(
         logger.error(e)
 
 
-def compare_with_previous_monthly_records(monthly_records, notify):
-    last_recent_recs = get_most_recent_monthly()
-    handle_difference(last_recent_recs, monthly_records, "monthly", notify=notify)
-
-
 def compare_with_previous_daily_records(daily_records, notify):
     last_recent_recs = get_most_recent_daily()
     handle_difference(last_recent_recs, daily_records, "daily", notify=notify)
@@ -202,9 +185,9 @@ def compare_with_previous_daily_fish_records(daily_records, notify):
 
 
 def run(notify=True):
-    date_now = datetime.datetime.now()
+    date_now = datetime.now()
     logger.info("Requesting crop data on {0}".format(date_now))
-    current_crop_records = {"monthly": [], "daily": []}
+    current_crop_records = {"daily": []}
     current_fish_records = []
 
     try:
@@ -212,11 +195,6 @@ def run(notify=True):
         logger.info("Attempting to retrieve most recent crop data")
         current_crop_records = fetcher.get_most_recent()
         if current_crop_records:
-            logger.info("Successfully retrieved crop data")
-            compare_with_previous_monthly_records(
-                current_crop_records["monthly"], notify=notify
-            )
-
             compare_with_previous_daily_records(
                 current_crop_records["daily"], notify=notify
             )
@@ -225,23 +203,23 @@ def run(notify=True):
     except Exception as e:
         logger.error(e, exc_info=True)
 
-    try:
-        # Attempt to retrieve Fishing Information
-        logger.info("Requesting fish data on {0}".format(date_now))
-        current_fish_records = get_most_recent_fish()
-        if current_fish_records:
-            logger.info(
-                "Successfully retrieved {} fish records".format(
-                    len(current_fish_records)
-                )
-            )
-            compare_with_previous_daily_fish_records(
-                current_fish_records, notify=notify
-            )
-        else:
-            logger.debug("Unable to successfully retrieve fish data")
-    except Exception as e:
-        logger.error(e, exc_info=True)
+    # try:
+    #     # Attempt to retrieve Fishing Information
+    #     logger.info("Requesting fish data on {0}".format(date_now))
+    #     current_fish_records = get_most_recent_fish()
+    #     if current_fish_records:
+    #         logger.info(
+    #             "Successfully retrieved {} fish records".format(
+    #                 len(current_fish_records)
+    #             )
+    #         )
+    #         compare_with_previous_daily_fish_records(
+    #             current_fish_records, notify=notify
+    #         )
+    #     else:
+    #         logger.debug("Unable to successfully retrieve fish data")
+    # except Exception as e:
+    #     logger.error(e, exc_info=True)
 
     return {"crops": current_crop_records, "fish": current_fish_records}
 
@@ -250,6 +228,5 @@ if __name__ == "__main__":
     is_prod = is_production()
     print(f"Attempting to retrieve information with push service. In Prod?: {is_prod}")
     results = run(notify=is_production())
-    from pprint import pprint
-
-    pprint(results)
+    # from pprint import pprint
+    # pprint(results)
