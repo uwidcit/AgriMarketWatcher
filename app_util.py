@@ -1,9 +1,11 @@
-import six
 import os
-import requests
 from datetime import timedelta
 from functools import update_wrapper
-from flask import current_app, request, make_response
+
+import requests
+import six
+from flask import current_app, make_response, request
+
 from log_configuration import logger
 
 

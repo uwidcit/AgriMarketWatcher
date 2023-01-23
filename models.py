@@ -1,11 +1,9 @@
-import datetime
-from log_configuration import logger
-from agrinet import redis_client
 import json
 
+from agrinet import redis_client
+from log_configuration import logger
 
 CROP_DAILY_KEY = "crop_daily"
-CROP_MONTHLY_KEY = "crop_monthly"
 CROP_COMMODITY_KEY = "crop_commodity"
 CROP_CATEGORY_KEY = "crop_category"
 FISH_DAILY_KEY = "fish_daily"
@@ -92,33 +90,8 @@ def get_daily_recent_by_commodity(commodity):
     return [crop for crop in daily_crops if crop["commodity"] == commodity.lower()]
 
 
-def store_monthly(crop_records):
-    return store_most_recent_monthly(crop_records)
-
-
-def store_most_recent_monthly(recent_crop_records):
-    for crop in recent_crop_records:
-        crop["date"] = str(crop["date"])
-    redis_client.set(CROP_MONTHLY_KEY, json.dumps(recent_crop_records))
-    return len(recent_crop_records)
-
-
-def get_most_recent_monthly():
-    commodities_str = redis_client.get(CROP_MONTHLY_KEY)
-    return json.loads(commodities_str or "[]")
-
-
-def get_monthly_by_id(rec_id):
-    monthly_crops = get_most_recent_monthly()
-    return monthly_crops[rec_id]
-
-
 def get_daily():
     return get_most_recent_daily()
-
-
-def get_monthly():
-    return get_most_recent_monthly()
 
 
 # ***** FISH ****

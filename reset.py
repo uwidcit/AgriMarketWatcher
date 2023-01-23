@@ -1,10 +1,10 @@
 from models import (
-    db,
     DailyCrops,
     DailyCropsRecent,
-    MonthlyCrops,
     DailyFish,
     DailyFishRecent,
+    MonthlyCrops,
+    db,
 )
 
 

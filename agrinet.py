@@ -1,14 +1,12 @@
 import os
 from datetime import datetime
-from log_configuration import logger
 
-from flask import Flask, request, render_template
+from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
-
-from app_util import crossdomain, process_results
-
 from flask_redis import FlaskRedis
 from mockredis import MockRedis
+
+from app_util import crossdomain, process_results
 
 
 def initialize_flask():
@@ -58,8 +56,8 @@ def process_query(target_class, query, req):
 @app.route("/api/admin/crops")
 @as_json
 def clean_up_and_fetch_crops():
-    from pushserver import run
     from models import delete_crop_records
+    from pushserver import run
 
     delete_crop_records()
 
@@ -131,7 +129,7 @@ def crops_id(cid=None):
 
     try:
         return get_daily_by_id(int(cid))
-    except:
+    except Exception:
         return None, 404
 
 
@@ -145,15 +143,14 @@ def daily_dates_list():
 
 
 @app.route("/crops/daily/recent")  # Returns the daily prices of the most recent entry
-@app.route(
-    "/crops/daily/recent/<crop>"
-)  # Returns the most recent daily price of the specified commodity
+# Returns the most recent daily price of the specified commodity
+@app.route("/crops/daily/recent/<crop>")
 @crossdomain(origin="*")
 @as_json
 def most_recent_daily_data(crop=None):
     """Returns the daily prices of the most recent entry
     or the most recent daily price of the specified commodity."""
-    from models import get_most_recent_daily, get_daily_recent_by_commodity
+    from models import get_most_recent_daily
 
     if crop:  # If we have a crop that we want to obtain
         return crop_daily_commodity(crop)
@@ -173,7 +170,7 @@ def crop_daily_categories(category=None):
     if category:
         try:
             return get_distinct_commodity_by_category(category)
-        except:
+        except Exception:
             return None, 404
     else:
         return get_distinct_categories()
@@ -191,118 +188,8 @@ def crop_daily_commodity(commodity=None):
             return crops
         else:
             return None, 404
-    except:
+    except Exception:
         return None, 404
-
-
-# Monthly Crop API
-
-
-@app.route("/crops/monthly/dates")
-@crossdomain(origin="*")
-@as_json
-def monthly_dates_list():
-    from models import MonthlyCrops
-
-    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
-    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
-    records = (
-        db.session.query(MonthlyCrops.date)
-        .distinct()
-        .order_by(desc(MonthlyCrops.date))
-        .limit(limit)
-        .offset(offset)
-        .all()
-    )
-    return [rec.date.strftime("%Y-%m-%dT%H:%M:%S") for rec in records]
-
-
-@app.route("/crops/monthly")
-@app.route("/crops/monthly/<date>")
-@crossdomain(origin="*")
-@as_json
-def monthly_crops(date=None):
-    from models import MonthlyCrops
-
-    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
-    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
-    try:
-        query = db.session.query(MonthlyCrops)
-        if date:
-            try:  # check if the date is either in one of the two supported formats
-                query_date = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                try:
-                    query_date = datetime.strptime(date, "%Y-%m-%d")
-                except ValueError:
-                    logger.error(
-                        "Received an invalid date from the user {0}".format(date)
-                    )
-                    return [], 404
-
-            query = query.filter(func.DATE(MonthlyCrops.date) == query_date)
-            query = process_query(MonthlyCrops, query, request)
-            query_results = query.limit(limit).offset(offset).all()
-            return process_results(query_results)
-        else:
-            query = process_query(MonthlyCrops, query, request)
-            query_results = query.limit(limit).offset(offset).all()
-            return process_results(query_results)
-    except Exception as e:
-        logger.error(e)
-
-    return []
-
-
-@app.route("/crops/monthly/category")
-@app.route("/crops/monthly/category/<category>")
-@crossdomain(origin="*")
-@as_json
-def monthly_crop_category(category=None):
-    from models import get_distinct_categories, MonthlyCrops
-
-    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
-    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
-
-    if category:
-        query = db.session.query(MonthlyCrops)
-        query = query.filter(func.upper(MonthlyCrops.category) == func.upper(category))
-        query = process_query(MonthlyCrops, query, request)
-        query_results = query.limit(limit).offset(offset).all()
-        res = process_results(query_results)
-    else:
-        res = get_distinct_categories()
-    return res
-
-
-@app.route("/crops/monthly/commodity")
-@app.route("/crops/monthly/commodity/<commodity>")
-@crossdomain(origin="*")
-@as_json
-def monthly_crop_commodity(commodity=None):
-    limit = int(request.args.get("limit")) if request.args.get("limit") else 100
-    offset = int(request.args.get("offset")) if request.args.get("offset") else 0
-
-    try:
-        from sqlalchemy import or_
-        from models import MonthlyCrops
-
-        if commodity is not None and len(commodity) > 1:
-            commodities = commodity.lower().split(",")
-            query = db.session.query(MonthlyCrops)
-            query_results = (
-                query.filter(or_(MonthlyCrops.commodity == v for v in commodities))
-                .limit(limit)
-                .offset(offset)
-                .all()
-            )
-            return process_results(query_results)
-        else:
-            return [], 404
-    except Exception as e:
-        logger.error(e)
-
-    return [], 500
 
 
 @app.route("/latest")
@@ -323,14 +210,16 @@ def fish_list():
     return get_distinct_fish_commodity()
 
 
-@app.route("/fishes/daily/recent")  # Returns the daily prices of the most recent entry
-@app.route(
-    "/fishes/daily/recent/<fish>"
-)  # Returns the most recent daily price of the specified comodity
+@app.route("/fishes/daily/recent")
+@app.route("/fishes/daily/recent/<fish>")
 @crossdomain(origin="*")
 @as_json
 def most_recent_daily_fish_merged(fish=None):
-    from models import get_most_recent_daily_fish, get_daily_recent_by_commodity_fish
+    """
+    if fish specified, returns the most recent daily price of the specified comodity
+    else Returns the daily prices of the most recent entry
+    """
+    from models import get_daily_recent_by_commodity_fish, get_most_recent_daily_fish
 
     if fish:  # If we have a crop that we want to obtain
         res = get_daily_recent_by_commodity_fish(fish)  # TODO - fails unique constraint

@@ -1,20 +1,16 @@
-import datetime
 from datetime import datetime
+
 import fcm
 import fetcher
 from app_util import is_production
 from log_configuration import logger
-from fetch_fish import get_most_recent_fish
 from models import (
-    get_most_recent_monthly,
     get_most_recent_daily,
     get_most_recent_daily_fish,
-    store_most_recent_daily,
-    store_most_recent_daily_fish,
     store_daily,
     store_daily_fish,
-    store_most_recent_monthly,
-    store_monthly,
+    store_most_recent_daily,
+    store_most_recent_daily_fish,
 )
 
 MIN_DIFF = 1.0
@@ -93,8 +89,6 @@ def handle_difference(previous_recs, current_recs, record_type="daily", notify=F
                 if record_type == "daily":
                     _update_daily_crop_records(current_recs)
                     _check_for_notify(previous_recs, current_recs, notify)
-                elif record_type == "monthly":
-                    _update_monthly_crop_records(current_recs)
                 else:
                     logger.error(f"Invalid record type: {record_type}")
             else:
@@ -105,22 +99,12 @@ def handle_difference(previous_recs, current_recs, record_type="daily", notify=F
             )
             if record_type == "daily":
                 _update_daily_crop_records(current_recs)
-            elif record_type == "monthly":
-                _update_monthly_crop_records(current_recs)
+            else:
+                logger.error(f"Invalid record type: {record_type}")
         else:
             logger.info("Neither previous or current records received")
     except Exception as e:
         logger.error(e, exc_info=True)
-
-
-def _update_monthly_crop_records(current_recs):
-    logger.info("Attempting to store recent month records")
-    records_stored = store_most_recent_monthly(current_recs)
-    logger.info(f"Stored {records_stored} recent monthly records")
-
-    logger.info("Attempting to store month records")
-    records_stored = store_monthly(current_recs)
-    logger.info(f"Stored {records_stored} monthly records")
 
 
 def _update_daily_crop_records(current_recs):
@@ -190,11 +174,6 @@ def handle_difference_fish(
         logger.error(e)
 
 
-def compare_with_previous_monthly_records(monthly_records, notify):
-    last_recent_recs = get_most_recent_monthly()
-    handle_difference(last_recent_recs, monthly_records, "monthly", notify=notify)
-
-
 def compare_with_previous_daily_records(daily_records, notify):
     last_recent_recs = get_most_recent_daily()
     handle_difference(last_recent_recs, daily_records, "daily", notify=notify)
@@ -208,7 +187,7 @@ def compare_with_previous_daily_fish_records(daily_records, notify):
 def run(notify=True):
     date_now = datetime.now()
     logger.info("Requesting crop data on {0}".format(date_now))
-    current_crop_records = {"monthly": [], "daily": []}
+    current_crop_records = {"daily": []}
     current_fish_records = []
 
     try:
@@ -216,10 +195,6 @@ def run(notify=True):
         logger.info("Attempting to retrieve most recent crop data")
         current_crop_records = fetcher.get_most_recent()
         if current_crop_records:
-            compare_with_previous_monthly_records(
-                current_crop_records["monthly"], notify=notify
-            )
-
             compare_with_previous_daily_records(
                 current_crop_records["daily"], notify=notify
             )

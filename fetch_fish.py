@@ -1,11 +1,12 @@
 import datetime
 import time
+
 import requests
 import xlrd
 from xlrd import open_workbook
 
-from log_configuration import logger
 from app_util import check_if_url_is_valid
+from log_configuration import logger
 
 months = [
     "January",
