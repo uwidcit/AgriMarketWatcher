@@ -10,3 +10,4 @@ static/libs
 .ipynb_checkpoints
 agrimarketwatcher.db
 *.egg-info
+.env

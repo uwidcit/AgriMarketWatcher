@@ -14,6 +14,13 @@ def initialize_flask():
     flask_app = Flask(__name__)
     # Setup the Flask JSON Plugin
     FlaskJSON(flask_app)
+    # Detect If Running in Development mode or on server
+    flask_app.debug = False if "ENV" in os.environ else True
+    # Retrieve data from the environment and add it to Flask App environment
+    redis_conn_uri = os.getenv("REDISCLOUD_URL")
+    if redis_conn_uri:
+        flask_app.config["REDIS_URL"] = redis_conn_uri
+
     if flask_app.testing:
         redis_client = FlaskRedis.from_custom_provider(MockRedis)
     else:
@@ -24,9 +31,6 @@ def initialize_flask():
 
 
 app, redis_client = initialize_flask()
-
-# Detect If Running in Development mode or on server
-app.debug = False if "ENV" in os.environ else True
 
 
 def process_query(target_class, query, req):
