@@ -4,7 +4,6 @@ from datetime import datetime
 from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
 from flask_redis import FlaskRedis
-from mockredis import MockRedis
 
 from app_util import crossdomain, process_results
 
@@ -22,6 +21,8 @@ def initialize_flask():
         flask_app.config["REDIS_URL"] = redis_conn_uri
 
     if flask_app.testing:
+        from mockredis import MockRedis
+
         redis_client = FlaskRedis.from_custom_provider(MockRedis)
     else:
         # Setup the Flask Redis Plugin
