@@ -122,7 +122,13 @@ def crops_all_daily():
     """Returns the daily prices of all the crops."""
     from models import get_daily
 
-    return get_daily()
+    try:
+        daily_crops = get_daily()
+        if not daily_crops:
+            daily_crops = fetch_latest()["crops"]
+        return daily_crops
+    except Exception:
+        return None, 500
 
 
 @app.route("/crops/daily/<cid>")
@@ -170,11 +176,18 @@ def most_recent_daily_data(crop=None):
     from models import get_most_recent_daily
 
     if crop:  # If we have a crop that we want to obtain
-        return crop_daily_commodity(crop)
+        try:
+            return crop_daily_commodity(crop)
+        except Exception:
+            return None, 404
     else:
-        crops = get_most_recent_daily()
-
-    return crops
+        try:
+            daily_crops = get_most_recent_daily()
+            if not daily_crops:
+                daily_crops = fetch_latest()["crops"]
+            return daily_crops
+        except Exception:
+            return None, 500
 
 
 @app.route("/crops/daily/category")  # list categories available to daily crops
