@@ -143,8 +143,20 @@ def crops_id(cid=None):
 @as_json
 def daily_dates_list():
     """returns all the daily dates available or returns the commodities for the date specified"""
-    res = []
-    return res
+    from models import get_daily_dates
+
+    return get_daily_dates()
+
+
+@app.route("/crops/daily/dates/<request_date>")  # returns all the daily dates available
+@crossdomain(origin="*")
+@as_json
+def get_daily_crops_by_date(request_date=None):
+    """returns all the daily dates available or returns the commodities for the date specified"""
+    app.logger.warning(
+        f"No longer support more than the current date. The date {request_date} will be ignored"
+    )
+    return crops_all_daily()
 
 
 @app.route("/crops/daily/recent")  # Returns the daily prices of the most recent entry
@@ -204,6 +216,9 @@ def fetch_latest():
     from pushserver import run
 
     return run(notify=False)
+
+
+# ***** Fish-related endpoints
 
 
 @app.route("/fishes")
