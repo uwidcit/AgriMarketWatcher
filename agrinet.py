@@ -122,7 +122,13 @@ def crops_all_daily():
     """Returns the daily prices of all the crops."""
     from models import get_daily
 
-    return get_daily()
+    try:
+        daily_crops = get_daily()
+        if not daily_crops:
+            daily_crops = fetch_latest()["crops"]
+        return daily_crops
+    except Exception:
+        return None, 500
 
 
 @app.route("/crops/daily/<cid>")
@@ -143,8 +149,20 @@ def crops_id(cid=None):
 @as_json
 def daily_dates_list():
     """returns all the daily dates available or returns the commodities for the date specified"""
-    res = []
-    return res
+    from models import get_daily_dates
+
+    return get_daily_dates()
+
+
+@app.route("/crops/daily/dates/<request_date>")  # returns all the daily dates available
+@crossdomain(origin="*")
+@as_json
+def get_daily_crops_by_date(request_date=None):
+    """returns all the daily dates available or returns the commodities for the date specified"""
+    app.logger.warning(
+        f"No longer support more than the current date. The date {request_date} will be ignored"
+    )
+    return crops_all_daily()
 
 
 @app.route("/crops/daily/recent")  # Returns the daily prices of the most recent entry
@@ -158,11 +176,18 @@ def most_recent_daily_data(crop=None):
     from models import get_most_recent_daily
 
     if crop:  # If we have a crop that we want to obtain
-        return crop_daily_commodity(crop)
+        try:
+            return crop_daily_commodity(crop)
+        except Exception:
+            return None, 404
     else:
-        crops = get_most_recent_daily()
-
-    return crops
+        try:
+            daily_crops = get_most_recent_daily()
+            if not daily_crops:
+                daily_crops = fetch_latest()["crops"]
+            return daily_crops
+        except Exception:
+            return None, 500
 
 
 @app.route("/crops/daily/category")  # list categories available to daily crops
@@ -204,6 +229,9 @@ def fetch_latest():
     from pushserver import run
 
     return run(notify=False)
+
+
+# ***** Fish-related endpoints
 
 
 @app.route("/fishes")

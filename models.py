@@ -94,6 +94,12 @@ def get_daily():
     return get_most_recent_daily()
 
 
+def get_daily_dates():
+    daily_crops = get_most_recent_daily()
+    crop = daily_crops[0]
+    return [crop["date"]]
+
+
 # ***** FISH ****
 
 
