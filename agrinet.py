@@ -5,7 +5,7 @@ from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
 from flask_redis import FlaskRedis
 
-from app_util import crossdomain, process_results
+from app_util import crossdomain
 from log_configuration import logger
 
 
@@ -263,7 +263,7 @@ def most_recent_daily_fish_merged(fish=None):
             return None, 404
     else:
         fishes = get_most_recent_daily_fish()
-    return process_results(fishes)
+    return fishes
 
 
 @app.route("/fishes/markets")
