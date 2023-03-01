@@ -28,7 +28,7 @@ jobs:
           flake8 .
       - name: Test with pytest
         run: |
-          pytest -vvv -s --cov=. tests
+          python -m pytest -vvv -s --cov=. tests
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
