@@ -4,9 +4,9 @@ from datetime import datetime
 from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
 from flask_redis import FlaskRedis
-from mockredis import MockRedis
 
-from app_util import crossdomain, process_results
+from app_util import crossdomain
+from log_configuration import logger
 
 
 def initialize_flask():
@@ -22,6 +22,8 @@ def initialize_flask():
         flask_app.config["REDIS_URL"] = redis_conn_uri
 
     if flask_app.testing:
+        from mockredis import MockRedis
+
         redis_client = FlaskRedis.from_custom_provider(MockRedis)
     else:
         # Setup the Flask Redis Plugin
@@ -65,7 +67,7 @@ def clean_up_and_fetch_crops():
 
     delete_crop_records()
 
-    return run(notify=False)
+    return run(notify=False, override=True)
 
 
 # Display Pages
@@ -121,7 +123,13 @@ def crops_all_daily():
     """Returns the daily prices of all the crops."""
     from models import get_daily
 
-    return get_daily()
+    try:
+        daily_crops = get_daily()
+        if not daily_crops:
+            daily_crops = fetch_latest()["crops"]
+        return daily_crops
+    except Exception:
+        return None, 500
 
 
 @app.route("/crops/daily/<cid>")
@@ -142,8 +150,21 @@ def crops_id(cid=None):
 @as_json
 def daily_dates_list():
     """returns all the daily dates available or returns the commodities for the date specified"""
-    res = []
-    return res
+    from models import get_daily_dates
+
+    dates = get_daily_dates()
+    return dates or []
+
+
+@app.route("/crops/daily/dates/<request_date>")  # returns all the daily dates available
+@crossdomain(origin="*")
+@as_json
+def get_daily_crops_by_date(request_date=None):
+    """returns all the daily dates available or returns the commodities for the date specified"""
+    app.logger.warning(
+        f"No longer support more than the current date. The date {request_date} will be ignored"
+    )
+    return crops_all_daily()
 
 
 @app.route("/crops/daily/recent")  # Returns the daily prices of the most recent entry
@@ -157,11 +178,19 @@ def most_recent_daily_data(crop=None):
     from models import get_most_recent_daily
 
     if crop:  # If we have a crop that we want to obtain
-        return crop_daily_commodity(crop)
+        try:
+            return crop_daily_commodity(crop)
+        except Exception:
+            return None, 404
     else:
-        crops = get_most_recent_daily()
-
-    return crops
+        try:
+            daily_crops = get_most_recent_daily()
+            if not daily_crops:
+                logger.info("Unable to retrieve records. Retrieving records")
+                daily_crops = fetch_latest()["crops"]
+            return daily_crops
+        except Exception:
+            return None, 500
 
 
 @app.route("/crops/daily/category")  # list categories available to daily crops
@@ -205,6 +234,9 @@ def fetch_latest():
     return run(notify=False)
 
 
+# ***** Fish-related endpoints
+
+
 @app.route("/fishes")
 @crossdomain(origin="*")
 @as_json
@@ -226,13 +258,12 @@ def most_recent_daily_fish_merged(fish=None):
     from models import get_daily_recent_by_commodity_fish, get_most_recent_daily_fish
 
     if fish:  # If we have a crop that we want to obtain
-        res = get_daily_recent_by_commodity_fish(fish)  # TODO - fails unique constraint
-        if not res:
+        fishes = get_daily_recent_by_commodity_fish(fish)
+        if not fishes:
             return None, 404
-        fishes = [res]
     else:
         fishes = get_most_recent_daily_fish()
-    return process_results(fishes)
+    return fishes
 
 
 @app.route("/fishes/markets")

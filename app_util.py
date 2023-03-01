@@ -6,8 +6,6 @@ import requests
 import six
 from flask import current_app, make_response, request
 
-from log_configuration import logger
-
 
 def crossdomain(
     origin=None,
@@ -60,15 +58,25 @@ def crossdomain(
     return decorator
 
 
-def process_results(query_results):
-    return [rec.as_dict() for rec in query_results]
-
-
-def is_production():
+def is_production() -> bool:
     return True if os.environ.get("ENV", "development") == "production" else False
 
 
-def check_if_url_is_valid(url):
-    logger.info(f"Checking if {url} is available")
-    status = requests.head(url).status_code
+def retrieve_crop_flag_from_env() -> bool:
+    return True if os.environ.get("RETRIEVE_CROPS", "true").lower() == "true" else False
+
+
+def retrieve_fish_flag_from_env() -> bool:
+    return True if os.environ.get("RETRIEVE_FISH", "true").lower() == "true" else False
+
+
+def check_if_url_is_valid(url: str) -> bool:
+    status = requests.head(url, timeout=get_timeout_value_from_evn()).status_code
     return status == 200 or status == 304
+
+
+def get_timeout_value_from_evn() -> int:
+    try:
+        return int(os.getenv("REQUEST_TIMEOUT", "5"))
+    except Exception:
+        return 5

@@ -1,225 +1,240 @@
 from datetime import datetime
+from typing import Callable, List
 
 import fcm
-import fetcher
-from app_util import is_production
+from app_util import (
+    is_production,
+    retrieve_crop_flag_from_env,
+    retrieve_fish_flag_from_env,
+)
+from fetch_fish import get_most_recent_fish
+from fetcher import get_most_recent
 from log_configuration import logger
 from models import (
     get_most_recent_daily,
     get_most_recent_daily_fish,
-    store_daily,
     store_daily_fish,
     store_most_recent_daily,
-    store_most_recent_daily_fish,
 )
 
 MIN_DIFF = 1.0
 
 
-def format_message(curr_rec, prev_rec, msg_type="daily"):
-    if msg_type == "daily":
-        message = {
-            "commodity": curr_rec["commodity"],
-            "date": curr_rec["date"].strftime("%Y-%m-%dT%H:%M:%S"),
-            "price": curr_rec["price"],
-            "previous": prev_rec.price,
-        }
-    else:
-        message = {
-            "commodity": curr_rec["commodity"],
-            "date": curr_rec["date"].strftime("%Y-%m-%dT%H:%M:%S"),
-            "mean": curr_rec["mean"],
-            "previous": prev_rec.mean,
-        }
-
-    return message
+def notify_if_daily_crop_price_difference(prev_rec: dict, curr_rec: dict):
+    notify_if_difference(
+        prev_rec=prev_rec,
+        curr_rec=curr_rec,
+        commodity_key="commodity",
+        current_key="price",
+        notify_title="AgriPrice",
+    )
 
 
-def notify_if_daily_crop_price_difference(prev_rec, curr_rec):
-    commodity = curr_rec["commodity"]
-    curr_price = curr_rec["price"]
+def notify_if_daily_fish_difference(prev_rec: dict, curr_rec: dict):
+    notify_if_difference(
+        prev_rec=prev_rec,
+        curr_rec=curr_rec,
+        commodity_key="commodity",
+        current_key="average_price",
+        notify_title="Fish Price",
+    )
+
+
+def notify_if_difference(
+    prev_rec: dict,
+    curr_rec: dict,
+    commodity_key: str,
+    current_key: str,
+    notify_title: str,
+):
+    commodity = curr_rec[commodity_key]
+    curr_price = curr_rec[current_key]
     unit = curr_rec["unit"]
 
-    if abs(prev_rec.price - curr_rec["price"]) > MIN_DIFF:
+    if abs(prev_rec[current_key] - curr_rec[current_key]) > MIN_DIFF:
         logger.info("price for {0} changed to ".format(commodity))
         # Build message and send push notification of change record
-        change = "decreased" if prev_rec.price >= curr_price else "increased"
-        message = "{0} has {1} to ${2} per {3}".format(
-            commodity, change, curr_price, unit
-        )
-        name = commodity.replace(" ", "")
-        logger.info("Sending message: {0}".format(message))
-        fcm.notify(message, name)
-    else:
-        logger.info("price for {0} remained the same".format(commodity))
-
-
-def notify_if_daily_fish_difference(prev_rec, curr_rec):
-    commodity = curr_rec["commodity"]
-    curr_price = curr_rec["average_price"]
-    unit = curr_rec["unit"]
-
-    if abs(prev_rec.average_price - curr_rec["average_price"]) > MIN_DIFF:
-        logger.info("price for {0} changed to ".format(commodity))
-        # Build message and send push notification of change record
-        change = "decreased" if prev_rec.average_price >= curr_price else "increased"
+        change = "decreased" if prev_rec[current_key] >= curr_price else "increased"
         message = "{0} has {1} to ${2} per {3}".format(
             commodity, change, curr_price, unit
         )
         name = commodity.replace(" ", "")
         logger.info("Attempting to send message: {0} using Firebase".format(message))
-        fcm.notify(message, name, title="Fish Price")
+        fcm.notify(message, name, title=notify_title)
     else:
         logger.info("price for {0} remained the same".format(commodity))
 
 
-def handle_difference(previous_recs, current_recs, record_type="daily", notify=False):
-    try:
-        if previous_recs and current_recs:
-            previous_date_str = previous_recs[0]["date"]
-            previous_date = datetime.strptime(
-                previous_date_str, "%Y-%m-%d %H:%M:%S"
-            ).ctime()
-            current_date = current_recs[0]["date"].ctime()
-            logger.info(f"{record_type}-Prev:{previous_date} Curr:{current_date}")
+def handle_difference(
+    previous_recs: List[dict],
+    current_recs: List[dict],
+    record_type: str,
+    notify: bool,
+    override: bool,
+    update_handler: Callable,
+    notify_handler: Callable,
+):
+    if record_type != "daily":
+        raise ValueError("Invalid record type: {0}".format(record_type))
 
-            if previous_date != current_date:
-                logger.info(f"we have updated {record_type} crop information")
+    # We have both previous and current records so we check if they are different
+    if previous_recs and current_recs:
+        previous_date = datetime.strptime(
+            previous_recs[0]["date"], "%Y-%m-%d %H:%M:%S"
+        ).ctime()
+        current_date = current_recs[0]["date"].ctime()
+        logger.info(f"{record_type}-Prev:{previous_date} Curr:{current_date}")
 
-                if record_type == "daily":
-                    _update_daily_crop_records(current_recs)
-                    _check_for_notify(previous_recs, current_recs, notify)
-                else:
-                    logger.error(f"Invalid record type: {record_type}")
-            else:
-                logger.info("no new record found")
-        elif current_recs:
-            logger.info(
-                "We do not have any previous records. Storing all current records"
-            )
-            if record_type == "daily":
-                _update_daily_crop_records(current_recs)
-            else:
-                logger.error(f"Invalid record type: {record_type}")
+        # If the dates are different then update records
+        if previous_date != current_date:
+            update_handler(current_recs)
+            notify_handler(previous_recs, current_recs, notify)
+
+        # IF the dates are not different, then override or ignore since not change
+        elif override:
+            update_handler(current_recs)
         else:
-            logger.info("Neither previous or current records received")
-    except Exception as e:
-        logger.error(e, exc_info=True)
+            logger.info("no new record found")
+    elif current_recs:
+        logger.info("We do not have any previous records. Storing all current records")
+        update_handler(current_recs)
+    else:
+        logger.info("Neither previous or current records received")
 
 
-def _update_daily_crop_records(current_recs):
+def handle_difference_crop(
+    previous_recs: List[dict],
+    current_recs: List[dict],
+    record_type: str = "daily",
+    notify: bool = False,
+    override: bool = False,
+):
+    return handle_difference(
+        previous_recs=previous_recs,
+        current_recs=current_recs,
+        record_type=record_type,
+        notify=notify,
+        override=override,
+        update_handler=_update_daily_crop_records,
+        notify_handler=_check_for_notify,
+    )
+
+
+def _update_daily_crop_records(current_recs: List[dict]):
     logger.info("Attempting to store recent daily records")
     records_stored = store_most_recent_daily(current_recs)
-    logger.info(f"Stored {records_stored} recent daily records")
+    if records_stored:
+        logger.info(f"Stored {records_stored} recent daily records")
+    else:
+        raise Exception("Failed to store records")
 
-    logger.info("Attempting to store recent daily records")
-    records_stored = store_daily(current_recs)
-    logger.info(f"Stored {records_stored} recent daily records")
 
-
-def _check_for_notify(previous_recs, current_recs, notify):
+def _check_for_notify(
+    previous_recs: List[dict], current_recs: List[dict], notify: bool
+):
     for prev_rec in previous_recs:
         for curr_rec in current_recs:
-            if prev_rec.commodity == curr_rec["commodity"]:
+            if prev_rec["commodity"] == curr_rec["commodity"]:
                 if curr_rec["price"] > 0:
                     if notify:
                         notify_if_daily_crop_price_difference(prev_rec, curr_rec)
 
 
-def handle_difference_fish(
-    previous_recs, current_recs, record_type="daily", notify=False
+def _check_for_notify_fish(
+    previous_recs: List[dict], current_recs: List[dict], notify: bool
 ):
-    try:
-        if previous_recs and current_recs:
-            logger.info("[FISH] Received value for both previous rec and curr rec")
-            previous_date = previous_recs[0].date.ctime()
-            current_date = current_recs[0]["date"].ctime()
-            logger.info(
-                "Previous: {0} /t Current: {1}".format(previous_date, current_date)
-            )
-            if previous_date != current_date:
-                if record_type == "daily":
-                    logger.info("[FISH] Attempting to store most recent records")
-                    store_most_recent_daily_fish(current_recs)
-                    logger.info("[FISH] Attempting to store daily records")
-                    store_daily_fish(current_recs)
-
-                    for prev_rec in previous_recs:
-                        for curr_rec in current_recs:
-                            if prev_rec.commodity == curr_rec["commodity"]:
-                                if curr_rec["average_price"] > 0:
-                                    logger.info(
-                                        "[FISH] The crop {0} has a value change for {1}".format(
-                                            curr_rec["commodity"],
-                                            curr_rec["average_price"],
-                                        )
-                                    )
-                                    if notify:
-                                        notify_if_daily_fish_difference(
-                                            prev_rec, curr_rec
-                                        )
-                                    else:
-                                        logger.info("[FISH] Skipping notification")
-            else:
-                logger.info("[FISH] no new record found")
-        elif not previous_recs:
-            logger.info("[FISH] No previous fish records exists")
-            logger.info("[FISH] Attempting to store the first most recent records")
-            store_most_recent_daily_fish(current_recs)
-            logger.info("[FISH] Attempting to store the first daily records")
-            store_daily_fish(current_recs)
-        else:
-            logger.info("[FISH] Doesn't exist")
-    except Exception as e:
-        logger.error(e)
+    for prev_rec in previous_recs:
+        for curr_rec in current_recs:
+            if prev_rec["commodity"] == curr_rec["commodity"]:
+                if curr_rec["average_price"] > 0:
+                    logger.info(
+                        "[FISH] The crop {0} has a value change for {1}".format(
+                            curr_rec["commodity"],
+                            curr_rec["average_price"],
+                        )
+                    )
+                    if notify:
+                        notify_if_daily_fish_difference(prev_rec, curr_rec)
 
 
-def compare_with_previous_daily_records(daily_records, notify):
+def handle_difference_fish(
+    previous_recs: List[dict],
+    current_recs: List[dict],
+    record_type: str = "daily",
+    notify: bool = False,
+    override: bool = False,
+):
+    return handle_difference(
+        previous_recs=previous_recs,
+        current_recs=current_recs,
+        record_type=record_type,
+        notify=notify,
+        override=override,
+        update_handler=store_daily_fish,
+        notify_handler=_check_for_notify_fish,
+    )
+
+
+def compare_with_previous_daily_records(
+    daily_records: List[dict], notify: bool, override: bool
+):
     last_recent_recs = get_most_recent_daily()
-    handle_difference(last_recent_recs, daily_records, "daily", notify=notify)
+    handle_difference_crop(
+        last_recent_recs, daily_records, "daily", notify=notify, override=override
+    )
 
 
-def compare_with_previous_daily_fish_records(daily_records, notify):
+def compare_with_previous_daily_fish_records(
+    daily_records: List[dict], notify: bool, override: bool
+):
     last_recent_recs = get_most_recent_daily_fish()
-    handle_difference_fish(last_recent_recs, daily_records, "daily", notify=notify)
+    handle_difference_fish(
+        last_recent_recs, daily_records, "daily", notify=notify, override=override
+    )
 
 
-def run(notify=True):
+def run(
+    notify: bool = True,
+    retrieve_crops: bool = True,
+    retrieve_fish: bool = True,
+    override: bool = True,
+):
     date_now = datetime.now()
-    logger.info("Requesting crop data on {0}".format(date_now))
-    current_crop_records = {"daily": []}
+    current_crop_records = []
     current_fish_records = []
 
-    try:
-        # Attempt to retrieve Crops Information
-        logger.info("Attempting to retrieve most recent crop data")
-        current_crop_records = fetcher.get_most_recent()
-        if current_crop_records:
-            compare_with_previous_daily_records(
-                current_crop_records["daily"], notify=notify
-            )
-        else:
-            logger.debug("Unable to successfully retrieve crop data")
-    except Exception as e:
-        logger.error(e, exc_info=True)
+    if retrieve_crops:
+        try:
+            # Attempt to retrieve Crops Information
+            logger.info("Attempting to retrieve most recent crop data")
+            current_crop_records = get_most_recent()
+            if current_crop_records:
+                compare_with_previous_daily_records(
+                    current_crop_records, notify=notify, override=override
+                )
+            else:
+                logger.debug("Unable to successfully retrieve crop data")
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
-    # try:
-    #     # Attempt to retrieve Fishing Information
-    #     logger.info("Requesting fish data on {0}".format(date_now))
-    #     current_fish_records = get_most_recent_fish()
-    #     if current_fish_records:
-    #         logger.info(
-    #             "Successfully retrieved {} fish records".format(
-    #                 len(current_fish_records)
-    #             )
-    #         )
-    #         compare_with_previous_daily_fish_records(
-    #             current_fish_records, notify=notify
-    #         )
-    #     else:
-    #         logger.debug("Unable to successfully retrieve fish data")
-    # except Exception as e:
-    #     logger.error(e, exc_info=True)
+    if retrieve_fish:
+        try:
+            # Attempt to retrieve Fishing Information
+            logger.info("Requesting fish data on {0}".format(date_now))
+            current_fish_records = get_most_recent_fish()
+            if current_fish_records:
+                logger.info(
+                    "Successfully retrieved {} fish records".format(
+                        len(current_fish_records)
+                    )
+                )
+                compare_with_previous_daily_fish_records(
+                    current_fish_records, notify=notify, override=override
+                )
+            else:
+                logger.debug("Unable to successfully retrieve fish data")
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
     return {"crops": current_crop_records, "fish": current_fish_records}
 
@@ -227,6 +242,11 @@ def run(notify=True):
 if __name__ == "__main__":
     is_prod = is_production()
     print(f"Attempting to retrieve information with push service. In Prod?: {is_prod}")
-    results = run(notify=is_production())
-    # from pprint import pprint
-    # pprint(results)
+    results = run(
+        notify=is_production(),
+        retrieve_crops=retrieve_crop_flag_from_env(),
+        retrieve_fish=retrieve_fish_flag_from_env(),
+    )
+    from pprint import pprint
+
+    pprint(results)
