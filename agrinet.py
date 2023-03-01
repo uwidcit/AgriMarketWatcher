@@ -263,7 +263,7 @@ def most_recent_daily_fish_merged(fish=None):
             return None, 404
     else:
         fishes = get_most_recent_daily_fish()
-    return process_results(fishes)
+    return fishes
 
 
 @app.route("/fishes/markets")
