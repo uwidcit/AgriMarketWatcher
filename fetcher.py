@@ -5,6 +5,7 @@ import requests
 import xlrd
 from xlrd import open_workbook
 
+from app_util import check_if_url_is_valid
 from log_configuration import logger
 
 default_category = "ROOT CROPS"
@@ -33,7 +34,6 @@ MONTHS = [
 
 base_monthly_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"
 daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"  # noqa: E501
-
 
 # Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
@@ -101,7 +101,7 @@ def process_row(sheet, row, type):
 def traverse_workbook(url, workbook_type="daily"):
     values = []
     try:
-        data = requests.get(url).content
+        data = requests.get(url, timeout=5).content
         wb = open_workbook(url, file_contents=data)
         for s in wb.sheets():
             for row in range(s.nrows):
@@ -137,17 +137,12 @@ def get_url(base_url, year, month, day=None):
     return None
 
 
-def check_if_url_is_valid(url):
-    status = requests.head(url).status_code
-    return status == 200 or status == 304
-
-
 def retrieve_daily(base_url, day, month, year):
     if not str(month).isdigit():
         month = MONTHS.index(month) + 1
 
     url = get_url(base_url, year, month, day)
-    if url:
+    if check_if_url_is_valid(url):
         result = traverse_workbook(url)
         if result:
             # Add the date to each record
@@ -188,14 +183,16 @@ def get_most_recent():
         reset_daily = False
 
         # get most recent daily data
-        d = None
+        daily_record = None
         for year in years:
             for day in reversed(list(range(day + 1))):
-                d = retrieve_daily(daily_base_url, str(day), month_num, str(year))
-                if d:
+                daily_record = retrieve_daily(
+                    daily_base_url, str(day), month_num, str(year)
+                )
+                if daily_record:
                     logger.info(
                         "Found {0} records for day {1}-{2}-{3}".format(
-                            len(d), day, month_num, year
+                            len(daily_record), day, month_num, year
                         )
                     )
                     reset_daily = True
@@ -203,11 +200,13 @@ def get_most_recent():
                 elif day < 10:
                     # To accommodate for the possibility of 01, 02 ... 09 as well
                     str_day = "0" + str(day)
-                    d = retrieve_daily(daily_base_url, str_day, month_num, str(year))
-                    if d:
+                    daily_record = retrieve_daily(
+                        daily_base_url, str_day, month_num, str(year)
+                    )
+                    if daily_record:
                         logger.info(
                             "Found {0} records for day {1}-{2}-{3}".format(
-                                len(d), day, month_num, year
+                                len(daily_record), day, month_num, year
                             )
                         )
                         reset_daily = True
@@ -215,7 +214,7 @@ def get_most_recent():
             if reset_daily:
                 break
             day = int(time.strftime("%d"))
-        return {"daily": d}
+        return {"daily": daily_record}
     except Exception as e:
         logger.error(e)
     finally:

@@ -15,7 +15,7 @@ def delete_crop_records():
 
 
 def store_daily(records):
-    logger.info("No longer supports anything else by the latest records")
+    logger.warning("No longer supports anything but the latest crop records")
     store_most_recent_daily(records)
 
 
@@ -114,11 +114,14 @@ def get_most_recent_daily_fish():
 
 
 def store_daily_fish(records):
+    logger.warning("No longer supports anything but the latest fish records")
     return store_most_recent_daily_fish(records)
 
 
 def store_most_recent_daily_fish(recent_records):
-    redis_client.set(FISH_DAILY_KEY, json.dumps(recent_records))
+    for fish_record in recent_records:
+        fish_record["date"] = str(fish_record["date"])
+    redis_client.set(FISH_DAILY_KEY, json.dumps(recent_records, default=str))
     return len(recent_records)
 
 
