@@ -101,6 +101,11 @@ https://pypa.github.io/pipx/installation/
 
 ### Running the dev environment
 Run redis in the background
+* First use:
 ```bash
 docker run --name redis-dev -p 6379:6379 -d redis
+```
+* Subsequent use:
+```bash
+docker container start redis-dev
 ```

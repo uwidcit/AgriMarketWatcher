@@ -6,6 +6,7 @@ from flask_json import FlaskJSON, as_json
 from flask_redis import FlaskRedis
 
 from app_util import crossdomain, process_results
+from log_configuration import logger
 
 
 def initialize_flask():
@@ -66,7 +67,7 @@ def clean_up_and_fetch_crops():
 
     delete_crop_records()
 
-    return run(notify=False)
+    return run(notify=False, override=True)
 
 
 # Display Pages
@@ -151,7 +152,8 @@ def daily_dates_list():
     """returns all the daily dates available or returns the commodities for the date specified"""
     from models import get_daily_dates
 
-    return get_daily_dates()
+    dates = get_daily_dates()
+    return dates or []
 
 
 @app.route("/crops/daily/dates/<request_date>")  # returns all the daily dates available
@@ -184,6 +186,7 @@ def most_recent_daily_data(crop=None):
         try:
             daily_crops = get_most_recent_daily()
             if not daily_crops:
+                logger.info("Unable to retrieve records. Retrieving records")
                 daily_crops = fetch_latest()["crops"]
             return daily_crops
         except Exception:
@@ -255,10 +258,9 @@ def most_recent_daily_fish_merged(fish=None):
     from models import get_daily_recent_by_commodity_fish, get_most_recent_daily_fish
 
     if fish:  # If we have a crop that we want to obtain
-        res = get_daily_recent_by_commodity_fish(fish)  # TODO - fails unique constraint
-        if not res:
+        fishes = get_daily_recent_by_commodity_fish(fish)
+        if not fishes:
             return None, 404
-        fishes = [res]
     else:
         fishes = get_most_recent_daily_fish()
     return process_results(fishes)

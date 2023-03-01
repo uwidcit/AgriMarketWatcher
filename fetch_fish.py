@@ -26,7 +26,7 @@ months = [
 markets = ["POSWFM", "OVWFM"]
 
 
-def get_url(market, year, month, day=None, with_zero=True):
+def get_fish_market_url(market, year, month, day=None, with_zero=True):
     base_url = "http://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Daily"
     if str(month).isdigit():
         mStr = months[int(month) - 1]
@@ -56,7 +56,7 @@ def retrieve_fish_data(daily_fish_url, market, year, month, day):
     # Attempt to retrieve records
     try:
         # retrieve the file and open as a stream of data
-        data = requests.get(daily_fish_url).content
+        data = requests.get(daily_fish_url, timeout=5).content
         wb = open_workbook(daily_fish_url, file_contents=data)
         # For each sheet, check each row for data in specific columns
         for sheet in wb.sheets():
@@ -130,7 +130,9 @@ def get_most_recent_fish_by_market(market):
         for year in years:
             for day in reversed(range(day + 1)):
                 for wz in with_zeros:
-                    daily_fish_url = get_url(market, year, month_num, day, wz)
+                    daily_fish_url = get_fish_market_url(
+                        market, year, month_num, day, wz
+                    )
                     logger.info(
                         "Retrieving fish for: {0}-{1}-{2} with url {3}".format(
                             day, month_num, year, daily_fish_url
@@ -164,13 +166,13 @@ def eval_url_gens():
     day = 4
     market = markets[1]  # Check different markets
     wz = False  # check different strategy for generating digits in url
-    daily_fish_url = get_url(market, year, month_num, day, wz)
+    daily_fish_url = get_fish_market_url(market, year, month_num, day, wz)
     check_url_result = check_if_url_is_valid(daily_fish_url)
     logger.info(check_url_result)
     return check_url_result
 
 
 if __name__ == "__main__":
+    logger.info("evaluate url generation process: {0}".format(eval_url_gens()))
     logger.info("Attempting to the test retrieving the fish information")
     logger.info(get_most_recent_fish())
-    # evalURLGens()
