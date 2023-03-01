@@ -5,7 +5,7 @@ from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
 from flask_redis import FlaskRedis
 
-from app_util import crossdomain, process_results
+from app_util import crossdomain
 from log_configuration import logger
 
 

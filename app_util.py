@@ -1,7 +1,6 @@
 import os
 from datetime import timedelta
 from functools import update_wrapper
-from typing import List
 
 import requests
 import six
@@ -57,10 +56,6 @@ def crossdomain(
         return update_wrapper(wrapped_function, f)
 
     return decorator
-
-
-def process_results(query_results) -> List[dict]:
-    return [rec.as_dict() for rec in query_results]
 
 
 def is_production() -> bool:
