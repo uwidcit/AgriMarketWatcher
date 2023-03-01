@@ -3,6 +3,7 @@ from datetime import datetime
 
 import requests
 import xlrd
+from requests.exceptions import ConnectTimeout
 from xlrd import open_workbook
 
 from app_util import check_if_url_is_valid
@@ -101,7 +102,7 @@ def process_row(sheet, row, type):
 def traverse_workbook(url, workbook_type="daily"):
     values = []
     try:
-        data = requests.get(url, timeout=5).content
+        data = requests.get(url).content
         wb = open_workbook(url, file_contents=data)
         for s in wb.sheets():
             for row in range(s.nrows):
@@ -120,43 +121,36 @@ def get_url(base_url, year, month, day=None):
         mStr = MONTHS[int(month) - 1]
     else:
         mStr = month
-        MONTHS.index(month) + 1
 
     if day:
         possible_urls = [
-            base_url + "%20" + str(day) + "%20" + mStr + "%20" + str(year) + ".xls",
-            base_url + str(day) + "%20" + mStr + "%20" + str(year) + ".xls",
+            f"{base_url}%20{day}%20{mStr}%20{year}.xls",
+            f"{base_url}{day}%20{mStr}%20{year}.xls",
         ]
         for url in possible_urls:
             if check_if_url_is_valid(url):
                 return url
     else:
-        url = base_url + str(mStr) + "%20" + str(year) + "%20NWM%20Monthly%20Report.xls"
+        url = f"{base_url}{mStr}%20{year}%20NWM%20Monthly%20Report.xls"
         if check_if_url_is_valid(url):
             return url
     return None
 
 
-def retrieve_daily(base_url, day, month, year):
-    if not str(month).isdigit():
+def retrieve_daily(url, day, month, year):
+    result = traverse_workbook(url)
+    if month in MONTHS:
         month = MONTHS.index(month) + 1
-
-    url = get_url(base_url, year, month, day)
-    if check_if_url_is_valid(url):
-        result = traverse_workbook(url)
-        if result:
-            # Add the date to each record
-            for x in result:
-                if x:
-                    x.update({"date": datetime(int(year), int(month), int(day))})
-                else:
-                    result.remove(x)
-            return result
-        else:
-            logger.error("Unable to extract data from the excel file")
+    if result:
+        # Add the date to each record
+        for x in result:
+            if x:
+                x.update({"date": datetime(int(year), int(month), int(day))})
+            else:
+                result.remove(x)
+        return result
     else:
-        logger.debug("No Daily report found for: {0}-{1}-{2}".format(day, month, year))
-    return None
+        logger.error("Unable to extract data from the excel file")
 
 
 # Logs sheets that have just been processed into the database
@@ -165,116 +159,51 @@ def log_sheet_as_processed(db, sheet):
 
 
 def get_most_recent():
-    try:
-        day = int(time.strftime("%d"))
-        month_num = int(time.strftime("%m"))
-        months_names = []
-        # Calculate the months needed
-        if month_num == 1:
-            months_names.extend(MONTHS)
-        else:
-            months_names.extend(MONTHS[0:month_num])
-
-        year_number = int(time.strftime("%Y"))
-        years = [year_number]
-        if month_num == 1:
-            years.append(year_number - 1)
-
-        reset_daily = False
-
-        # get most recent daily data
-        daily_record = None
-        for year in years:
-            for day in reversed(list(range(day + 1))):
-                daily_record = retrieve_daily(
-                    daily_base_url, str(day), month_num, str(year)
-                )
-                if daily_record:
-                    logger.info(
-                        "Found {0} records for day {1}-{2}-{3}".format(
-                            len(daily_record), day, month_num, year
-                        )
-                    )
-                    reset_daily = True
-                    break
-                elif day < 10:
-                    # To accommodate for the possibility of 01, 02 ... 09 as well
-                    str_day = "0" + str(day)
-                    daily_record = retrieve_daily(
-                        daily_base_url, str_day, month_num, str(year)
-                    )
-                    if daily_record:
-                        logger.info(
-                            "Found {0} records for day {1}-{2}-{3}".format(
-                                len(daily_record), day, month_num, year
-                            )
-                        )
-                        reset_daily = True
-                        break
-            if reset_daily:
-                break
-            day = int(time.strftime("%d"))
-        return {"daily": daily_record}
-    except Exception as e:
-        logger.error(e)
-    finally:
-        pass
-    return None
-
-
-def process_run_get_day(day, month, year):
-    # extract daily reports
-    logger.info("Attempting to retrieve day {0}-{1}-{2}".format(day, month, year))
-    d = retrieve_daily(daily_base_url, str(day), month, str(year))
-    if d:
-        logger.info("Data for {0}-{1}-{2} was successful".format(day, month, year))
+    starting_day = int(time.strftime("%d"))
+    curr_month_num = int(time.strftime("%m"))
+    months_names = []
+    # Calculate the months needed
+    if curr_month_num == 1:
+        months_names.extend(MONTHS)
     else:
-        logger.error("Data for {0}-{1}-{2} was unsuccessful".format(day, month, year))
-    return d
+        months_names.extend(MONTHS[0:curr_month_num])
 
+    year_number = int(time.strftime("%Y"))
+    years = [year_number]
+    if curr_month_num == 1:
+        years.append(year_number - 1)
 
-def run_get_all(store_data, years, months):
-    from models import store_most_recent_daily
+    # get most recent daily data
+    daily_record = None
+    for year in years:
+        for month_name in reversed(months_names):
+            for day in reversed(list(range(starting_day + 1))):
+                try:
+                    day_str = f"0{day}" if day < 10 else str(day)
+                    daily_crop_url = get_url(daily_base_url, year, month_name, day_str)
+                    logger.info(f"URL {daily_crop_url} for {day_str}-{month_name}")
+                    if daily_crop_url and check_if_url_is_valid(daily_crop_url):
+                        daily_record = retrieve_daily(
+                            daily_crop_url, day_str, month_name, str(year)
+                        )
+                        if daily_record:
+                            logger.info(
+                                f"Found {len(daily_record)} records {day_str}-{month_name}-{year}"
+                            )
+                            return daily_record
+                except ConnectTimeout:
+                    logger.info(f"No record for {day}-{month_name}-{year}")
+                except Exception as e:
+                    logger.error(f"{e}", exc_info=True)
 
-    most_recent_daily = None
-    daily = []
-    reset_daily = False
-
-    for year in reversed(list(years)):  # TODO Update to not have to set date
-        for month in reversed(list(months)):  # extract monthly reports
-            # extract daily reports
-            for day in range(31, 0, -1):
-                d = retrieve_daily(daily_base_url, str(day), month, str(year))
-                if d:
-                    reset_daily = True
-                    daily.extend(d)
-                    if not most_recent_daily:
-                        most_recent_daily = d
-
-    if store_data:
-        try:
-            # If we have a new set of data for the daily information,
-            # we write that into the database
-            if reset_daily:
-                logger.info("Retrieving the Most Recent Daily Crops")
-                store_most_recent_daily(most_recent_daily)
-
-        except Exception as e:
-            logger.error(e)
-
-    return {
-        "daily": daily,
-        "most_recent_daily": most_recent_daily,
-    }
+            # We're starting a new month so start from the maximum day value
+            starting_day = 31
 
 
 if __name__ == "__main__":
     import json
 
-    # from pprint import pprint
-
     records = get_most_recent()
-    # pprint(records)
     print(json.dumps(records, indent=4, default=str))
     with open("./data/records.json", "w") as fp:
         json.dump(obj=records, fp=fp, indent=4, default=str)
