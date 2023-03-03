@@ -4,6 +4,7 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 sentry_logging = LoggingIntegration(
     level=logging.INFO,  # Capture info and above as breadcrumbs
@@ -14,11 +15,14 @@ is_production = True if os.environ.get("ENV", "development") == "production" els
 environment = "production" if is_production else "development"
 logging.info("Environment is {0}".format(environment))
 
-logging.info("Enabling Sentry Integration")
-sentry_sdk.init(
-    dsn="https://7761c2f9313245b496cbbd07ccecceb0@sentry.io/1295927",
-    integrations=[FlaskIntegration(), sentry_logging],
-    traces_sample_rate=1.0,
-    environment=environment,
-    attach_stacktrace=True,
-)
+sentry_dns = os.getenv("SENTRY_DNS")
+if sentry_dns:
+    logging.info("Enabling Sentry Integration")
+    sentry_sdk.init(
+        dsn=sentry_dns,
+        integrations=[FlaskIntegration(), sentry_logging, RedisIntegration()],
+        traces_sample_rate=0.25,
+        sample_rate=0.25,
+        environment=environment,
+        attach_stacktrace=True,
+    )

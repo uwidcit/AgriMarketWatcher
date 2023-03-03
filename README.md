@@ -43,13 +43,6 @@ using multipack for heroku installatin
 https://github.com/Stibbons/heroku-buildpack-libffi
 
 
-### Database Upgrade
-
-```bash
-heroku run python manage.py db upgrade --app agrimarketwatch
-```
-
-
 ## Development Notes
 ### Development Environment
 1. We recommend a linux/unix environment. If using windows, the Linux Subsystem might be better than powershell or cmd
