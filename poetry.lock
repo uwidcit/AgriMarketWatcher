@@ -663,6 +663,26 @@ files = [
 tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
+name = "fakeredis"
+version = "2.10.0"
+description = "Fake implementation of redis API for testing purposes."
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "fakeredis-2.10.0-py3-none-any.whl", hash = "sha256:7e66c96793688703a1da41256323ddaa1b3a2cab4ef793866839a937bb273915"},
+    {file = "fakeredis-2.10.0.tar.gz", hash = "sha256:722644759bba4ad61fa38f0bb34939b7657f166ba35892f747e282407a196845"},
+]
+
+[package.dependencies]
+redis = ">=4,<5"
+sortedcontainers = ">=2.4,<3.0"
+
+[package.extras]
+json = ["jsonpath-ng (>=1.5,<2.0)"]
+lua = ["lupa (>=1.14,<2.0)"]
+
+[[package]]
 name = "fastjsonschema"
 version = "2.16.2"
 description = "Fastest Python implementation of JSON schema"
@@ -1349,17 +1369,6 @@ python-versions = "*"
 files = [
     {file = "mistune-2.0.4-py2.py3-none-any.whl", hash = "sha256:182cc5ee6f8ed1b807de6b7bb50155df7b66495412836b9a74c8fbdfc75fe36d"},
     {file = "mistune-2.0.4.tar.gz", hash = "sha256:9ee0a66053e2267aba772c71e06891fa8f1af6d4b01d5e84e267b4570d4d9808"},
-]
-
-[[package]]
-name = "mockredis"
-version = "0.1.3dev"
-description = "A mock redis object."
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "mockredis-0.1.3dev.tar.gz", hash = "sha256:fa780c203588ee898c1aa13ed6f7283861560300a95d8800bc9a2679ba9cb9ee"},
 ]
 
 [[package]]
@@ -2342,6 +2351,18 @@ files = [
 ]
 
 [[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"},
+    {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
+]
+
+[[package]]
 name = "soupsieve"
 version = "2.3.2.post1"
 description = "A modern CSS selector implementation for Beautiful Soup."
@@ -2625,4 +2646,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "81c53f374af6f19a54c864e9c4c14d7c867f79d43716a0f0240f8f9eeba2b0d1"
+content-hash = "1ab889f7aed406dfb1df2db2398f50fd8d253b504c0b53130a3a3ac15399fe25"

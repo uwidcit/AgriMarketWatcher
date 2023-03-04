@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Callable, List
 
-import fcm
+from fcm import notify
 from app_util import (
     is_production,
     retrieve_crop_flag_from_env,
@@ -59,8 +59,8 @@ def notify_if_difference(
             commodity, change, curr_price, unit
         )
         name = commodity.replace(" ", "")
-        logger.info("Attempting to send message: {0} using Firebase".format(message))
-        fcm.notify(message, name, title=notify_title)
+        logger.info(f"Attempting to send message: {message} using Firebase")
+        notify(message, name, title=notify_title)
     else:
         logger.info("price for {0} remained the same".format(commodity))
 
@@ -179,6 +179,9 @@ def compare_with_previous_daily_records(
     daily_records: List[dict], notify: bool, override: bool
 ):
     last_recent_recs = get_most_recent_daily()
+    logger.info(
+        f"Comparing prev {len(last_recent_recs)} with current {len(daily_records)}"
+    )
     handle_difference_crop(
         last_recent_recs, daily_records, "daily", notify=notify, override=override
     )
@@ -198,7 +201,7 @@ def run(
     retrieve_crops: bool = True,
     retrieve_fish: bool = True,
     override: bool = True,
-):
+) -> dict:
     date_now = datetime.now()
     current_crop_records = []
     current_fish_records = []

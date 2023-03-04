@@ -58,8 +58,14 @@ def crossdomain(
     return decorator
 
 
+def is_testing() -> bool:
+    return True if os.environ.get("TESTING", "false").lower() == "true" else False
+
+
 def is_production() -> bool:
-    return True if os.environ.get("ENV", "development") == "production" else False
+    return (
+        True if os.environ.get("ENV", "development").lower() == "production" else False
+    )
 
 
 def retrieve_crop_flag_from_env() -> bool:
@@ -72,7 +78,7 @@ def retrieve_fish_flag_from_env() -> bool:
 
 def check_if_url_is_valid(url: str) -> bool:
     status = requests.head(url, timeout=get_timeout_value_from_evn()).status_code
-    return status == 200 or status == 304
+    return status == 200 or status == 201 or status == 304
 
 
 def get_timeout_value_from_evn() -> int:
