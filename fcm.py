@@ -1,14 +1,19 @@
 import os
+
 from pyfcm import FCMNotification
 
 # Your api-key can be gotten from:
 # https://console.firebase.google.com/project/<project-name>/settings/cloudmessaging
 
-push_service = FCMNotification(api_key=os.getenv("FCM_API_KEY"))
-registration_id = os.getenv("FB_REGISTRATION_ID")
+
+def init_push_service():
+    push_service = FCMNotification(api_key=os.getenv("FCM_API_KEY"))
+    return push_service
 
 
-def notify(content, crop, title="AgriPrice", color="#80"):
+def notify(
+    content, crop, title="AgriPrice", color="#80", push_service=init_push_service()
+):
     topic = change(crop)
     message = {"body": content, "title": title, "icon": "icon", "color": color}
     return push_service.notify_topic_subscribers(

@@ -137,13 +137,15 @@ def get_most_recent_fish_by_market(market):
                     )
                     logger.info(f"URL {daily_fish_url} for {day_str}-{month_name}")
                     if check_if_url_is_valid(daily_fish_url):
-                        logger.info(
-                            f"{daily_fish_url} was valid, attempting to retrieve data"
-                        )
+                        logger.info(f"Attempting to retrieve data for {daily_fish_url}")
                         recs = retrieve_fish_data(
                             daily_fish_url, market, year, month_name, day
                         )
-                        return recs  # Fetch the latest value and terminate
+                        logger.info(f"{len(recs)}")
+                        if recs:
+                            return recs  # Fetch the latest value and terminate
+                        else:
+                            logger.info(f"Failed to parse {day}-{month_name}-{year}")
                 except requests.ConnectTimeout:
                     logger.info(f"No record for {day}-{month_name}-{year}")
                 except Exception as e:
@@ -158,9 +160,27 @@ def get_most_recent_fish():
     records = []
     for market in markets:
         market_record = get_most_recent_fish_by_market(market)
+        print(market_record)
         if market_record:
             records = records + market_record
-    return records
+
+    return filter_valid_fish_records(records)
+
+
+def is_valid_digit(value):
+    try:
+        float(value)
+        return True
+    except Exception:
+        return False
+
+
+def filter_valid_fish_records(records):
+    new_recs = []
+    for rec in records:
+        if is_valid_digit(rec["frequent_price"]) and is_valid_digit(rec["volume"]):
+            new_recs.append(rec)
+    return new_recs
 
 
 def eval_url_gens():

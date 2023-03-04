@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
 
+import redis
 from flask import Flask, render_template
 from flask_json import FlaskJSON, as_json
-from flask_redis import FlaskRedis
 
 from app_util import crossdomain
 from log_configuration import logger
@@ -18,16 +18,12 @@ def initialize_flask():
     flask_app.debug = False if "ENV" in os.environ else True
     # Retrieve data from the environment and add it to Flask App environment
     redis_conn_uri = os.getenv("REDISCLOUD_URL")
+    # Setup the Flask Redis Plugin
     if redis_conn_uri:
         flask_app.config["REDIS_URL"] = redis_conn_uri
-
-    if flask_app.testing:
-        from mockredis import MockRedis
-
-        redis_client = FlaskRedis.from_custom_provider(MockRedis)
+        redis_client = redis.StrictRedis.from_url(redis_conn_uri)
     else:
-        # Setup the Flask Redis Plugin
-        redis_client = FlaskRedis(flask_app)
+        redis_client = redis.StrictRedis()
 
     return flask_app, redis_client
 
