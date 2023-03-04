@@ -235,7 +235,7 @@ def run(
                     current_fish_records, notify=notify, override=override
                 )
             else:
-                logger.debug("Unable to successfully retrieve fish data")
+                logger.debug("Unable to retrieve fish data")
         except Exception as e:
             logger.error(e, exc_info=True)
 
