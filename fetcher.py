@@ -3,7 +3,6 @@ from datetime import datetime
 
 import requests
 import xlrd
-from requests.exceptions import ConnectTimeout
 from xlrd import open_workbook
 
 from app_util import check_if_url_is_valid, is_production
@@ -120,12 +119,18 @@ def get_url(base_url, year, month, day=None):
 
     if day:
         possible_urls = [
-            f"{base_url}%20-%20{day}%20{mStr}%20{year}.xls",  # ...Market Report - 6 March 2023.xls
-            f"{base_url}%20-%200{day}%20{mStr}%20{year}.xls",  # ...Market Report - 06 March 2023.xls
-            f"{base_url}%20-{day}%20{mStr}%20{year}.xls",  # ...Market Report -6 March 2023.xls
-            f"{base_url}%20-0{day}%20{mStr}%20{year}.xls",  # ...Market Report -06 March 2023.xls
-            f"{base_url}-{day}%20{mStr}%20{year}.xls",  # ...Market Report-6 March 2023.xls
-            f"{base_url}-0{day}%20{mStr}%20{year}.xls",  # ...Market Report-06 March 2023.xls
+            # ...Market Report - 6 March 2023.xls
+            f"{base_url}%20-%20{day}%20{mStr}%20{year}.xls",
+            # ...Market Report - 06 March 2023.xls
+            f"{base_url}%20-%200{day}%20{mStr}%20{year}.xls",
+            # ...Market Report -6 March 2023.xls
+            f"{base_url}%20-{day}%20{mStr}%20{year}.xls",
+            # ...Market Report -06 March 2023.xls
+            f"{base_url}%20-0{day}%20{mStr}%20{year}.xls",
+            # ...Market Report-6 March 2023.xls
+            f"{base_url}-{day}%20{mStr}%20{year}.xls",
+            # ...Market Report-06 March 2023.xls
+            f"{base_url}-0{day}%20{mStr}%20{year}.xls",
         ]
         for url in possible_urls:
             if check_if_url_is_valid(url):
