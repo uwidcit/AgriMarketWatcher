@@ -6,7 +6,7 @@ import xlrd
 from requests.exceptions import ConnectTimeout
 from xlrd import open_workbook
 
-from app_util import check_if_url_is_valid
+from app_util import check_if_url_is_valid, is_production
 from log_configuration import logger
 
 default_category = "ROOT CROPS"
@@ -34,7 +34,7 @@ MONTHS = [
 ]
 
 base_monthly_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Monthly/"
-daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report%20-"  # noqa: E501
+daily_base_url = "https://www.namistt.com/DocumentLibrary/Market%20Reports/Daily/Norris%20Deonarine%20NWM%20Daily%20Market%20Report"  # noqa: E501
 
 # Extracts the data from a row and returns a dictionary
 # @param sheet : the sheet to be processed
@@ -101,19 +101,15 @@ def process_row(sheet, row, type):
 
 def traverse_workbook(url, workbook_type="daily"):
     values = []
-    try:
-        data = requests.get(url).content
-        wb = open_workbook(url, file_contents=data)
-        for s in wb.sheets():
-            for row in range(s.nrows):
-                if workbook_type == "daily" and row > 10:
-                    rowData = process_row(s, row, workbook_type)
-                    if rowData:
-                        values.append(rowData)
-        return values
-    except Exception as e:
-        logger.error("Error traversing workbook: {0}".format(e))
-        return None
+    data = requests.get(url).content
+    wb = open_workbook(url, file_contents=data)
+    for s in wb.sheets():
+        for row in range(s.nrows):
+            if workbook_type == "daily" and row > 10:
+                rowData = process_row(s, row, workbook_type)
+                if rowData:
+                    values.append(rowData)
+    return values
 
 
 def get_url(base_url, year, month, day=None):
@@ -124,8 +120,12 @@ def get_url(base_url, year, month, day=None):
 
     if day:
         possible_urls = [
-            f"{base_url}%20{day}%20{mStr}%20{year}.xls",
-            f"{base_url}{day}%20{mStr}%20{year}.xls",
+            f"{base_url}%20-%20{day}%20{mStr}%20{year}.xls",  # ...Market Report - 6 March 2023.xls
+            f"{base_url}%20-%200{day}%20{mStr}%20{year}.xls",  # ...Market Report - 06 March 2023.xls
+            f"{base_url}%20-{day}%20{mStr}%20{year}.xls",  # ...Market Report -6 March 2023.xls
+            f"{base_url}%20-0{day}%20{mStr}%20{year}.xls",  # ...Market Report -06 March 2023.xls
+            f"{base_url}-{day}%20{mStr}%20{year}.xls",  # ...Market Report-6 March 2023.xls
+            f"{base_url}-0{day}%20{mStr}%20{year}.xls",  # ...Market Report-06 March 2023.xls
         ]
         for url in possible_urls:
             if check_if_url_is_valid(url):
@@ -150,7 +150,7 @@ def retrieve_daily(url, day, month, year):
                 result.remove(x)
         return result
     else:
-        logger.error("Unable to extract data from the excel file")
+        logger.error(f"Unable to extract data from the excel file: {url}")
 
 
 # Logs sheets that have just been processed into the database
@@ -158,9 +158,13 @@ def log_sheet_as_processed(db, sheet):
     db.processed.insert({"url": sheet})
 
 
-def get_most_recent():
-    starting_day = int(time.strftime("%d"))
+def valid_url_generator(
+    base_url: str = daily_base_url, display_dates: bool = not is_production()
+):
+    starting_day_num = int(time.strftime("%d"))
     curr_month_num = int(time.strftime("%m"))
+    year_num = int(time.strftime("%Y"))
+
     months_names = []
     # Calculate the months needed
     if curr_month_num == 1:
@@ -168,42 +172,49 @@ def get_most_recent():
     else:
         months_names.extend(MONTHS[0:curr_month_num])
 
-    year_number = int(time.strftime("%Y"))
-    years = [year_number]
+    years = [year_num]
     if curr_month_num == 1:
-        years.append(year_number - 1)
+        years.append(year_num - 1)
 
     # get most recent daily data
-    daily_record = None
     for year in years:
         for month_name in reversed(months_names):
-            for day in reversed(list(range(starting_day + 1))):
-                try:
-                    day_str = f"0{day}" if day < 10 else str(day)
-                    daily_crop_url = get_url(daily_base_url, year, month_name, day_str)
-                    logger.info(f"URL {daily_crop_url} for {day_str}-{month_name}")
-                    if daily_crop_url and check_if_url_is_valid(daily_crop_url):
-                        daily_record = retrieve_daily(
-                            daily_crop_url, day_str, month_name, str(year)
+            for day in reversed(list(range(1, starting_day_num + 1))):
+                # day_str = f"0{day}" if day < 10 else str(day)
+                day_str = str(day)
+                daily_crop_url = get_url(base_url, year, month_name, day_str)
+                if daily_crop_url:
+                    if display_dates:
+                        logger.info(
+                            f"valid URL {daily_crop_url} for {day_str}-{month_name}"
                         )
-                        if daily_record:
-                            logger.info(
-                                f"Found {len(daily_record)} records {day_str}-{month_name}-{year}"
-                            )
-                            return daily_record
-                except ConnectTimeout:
-                    logger.info(f"No record for {day}-{month_name}-{year}")
-                except Exception as e:
-                    logger.error(f"{e}", exc_info=True)
+                    yield (daily_crop_url, day_str, month_name, year)
 
             # We're starting a new month so start from the maximum day value
-            starting_day = 31
+            starting_day_num = 29 if curr_month_num == 2 else 31
+
+
+def get_most_recent():
+    for url_tuple in valid_url_generator():
+        try:
+            daily_crop_url, day_str, month_name, year = url_tuple
+            daily_record = retrieve_daily(
+                daily_crop_url, day_str, month_name, str(year)
+            )
+            if daily_record:
+                logger.info(
+                    f"Found {len(daily_record)} records {day_str}-{month_name}-{year}"
+                )
+                return daily_record
+        except Exception as e:
+            logger.error(f"{e}", exc_info=True)
 
 
 if __name__ == "__main__":
     import json
 
+    # records = list(valid_url_generator())
     records = get_most_recent()
     print(json.dumps(records, indent=4, default=str))
-    with open("./data/records.json", "w") as fp:
-        json.dump(obj=records, fp=fp, indent=4, default=str)
+    # with open("./data/records.json", "w") as fp:
+    #     json.dump(obj=records, fp=fp, indent=4, default=str)
