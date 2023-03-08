@@ -77,12 +77,16 @@ def retrieve_fish_flag_from_env() -> bool:
 
 
 def check_if_url_is_valid(url: str) -> bool:
-    status = requests.head(url, timeout=get_timeout_value_from_evn()).status_code
-    return status == 200 or status == 201 or status == 304
+    try:
+        status = requests.head(url, timeout=get_timeout_value_from_evn()).status_code
+        # print(f"{url} - {status}")
+        return status == 200 or status == 201 or status == 304 or status == 302
+    except requests.ConnectTimeout:
+        return False
 
 
 def get_timeout_value_from_evn() -> int:
     try:
-        return int(os.getenv("REQUEST_TIMEOUT", "5"))
+        return int(os.getenv("REQUEST_TIMEOUT", "10"))
     except Exception:
-        return 5
+        return 10
